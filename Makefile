@@ -4,12 +4,14 @@ DISCIT_DIR = /home/shared/projects/discit
 
 up: discit-up
 	docker compose up -d --build
-	@# discit integrations'ı omega-net'e bağla
+	@# discit servislerini omega-net'e bağla
 	docker network connect omega-net discit-integrations-api 2>/dev/null || true
+	docker network connect omega-net discit-demand-app 2>/dev/null || true
 
 down:
 	docker compose down
 	docker network disconnect omega-net discit-integrations-api 2>/dev/null || true
+	docker network disconnect omega-net discit-demand-app 2>/dev/null || true
 
 discit-up:
 	docker network create omega-net 2>/dev/null || true

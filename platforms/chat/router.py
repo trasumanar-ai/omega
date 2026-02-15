@@ -9,7 +9,7 @@ Discit'in SimChatTransport'u şu endpointleri çağırır:
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -41,7 +41,7 @@ class MarkReadRequest(BaseModel):
 
 
 @router.post("/send")
-async def send(req: SendRequest):
+async def send(req: SendRequest, request: Request):
     msg = {
         "id": f"sim_{uuid.uuid4().hex[:12]}",
         "channel": "whatsapp",
@@ -53,6 +53,12 @@ async def send(req: SendRequest):
         "status": "sent",
     }
     _messages.append(msg)
+
+    # Mesajı müşteri agent'ına ilet
+    engine = getattr(request.app.state, "sim_engine", None)
+    if engine and msg["body"]:
+        engine.deliver_to_customer(req.to, msg["body"])
+
     return msg
 
 

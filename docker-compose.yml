@@ -1,10 +1,22 @@
 services:
   platforms:
-    build: ./platforms
+    build:
+      context: .
+      dockerfile: platforms/Dockerfile
     container_name: omega-platforms
     restart: unless-stopped
     ports:
       - "20000:20000"
+    environment:
+      - SIM_DEMAND_URL=http://discit-demand-app:13000
+      - SIM_SPEED=60
+      - SIM_LEAD_INTERVAL_MINUTES=30
+      - SIM_MAX_CUSTOMERS=10
+      - SIM_LLM_PROVIDER=${SIM_LLM_PROVIDER:-gemini}
+      - SIM_LLM_MODEL=${SIM_LLM_MODEL:-gemini-3-flash-preview}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPUS_API_KEY=${OPUS_API_KEY:-}
+      - OPUS_BASE_URL=${OPUS_BASE_URL:-}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:20000/health')"]
       interval: 5s
