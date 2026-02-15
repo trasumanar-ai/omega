@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -67,7 +68,7 @@ async def media_url(media_id: str):
 
 @router.get("/media/{media_id}/bytes")
 async def media_bytes(media_id: str):
-    return b""
+    return Response(content=b"", media_type="application/octet-stream")
 
 
 @router.get("/messages")

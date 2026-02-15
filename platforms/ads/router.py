@@ -26,12 +26,12 @@ async def list_campaigns(account_id: str = "", status: str | None = None):
 
 @router.get("/campaigns/{campaign_id}")
 async def get_campaign(campaign_id: str):
-    return {"id": campaign_id, "name": "sim-campaign", "status": "ACTIVE"}
+    return {"id": campaign_id, "name": "sim-campaign", "status": "active"}
 
 
 @router.patch("/campaigns/{campaign_id}")
 async def update_campaign(campaign_id: str):
-    return {"id": campaign_id, "name": "sim-campaign", "status": "ACTIVE"}
+    return {"id": campaign_id, "name": "sim-campaign", "status": "active"}
 
 
 @router.get("/ad-sets")
@@ -41,7 +41,7 @@ async def list_ad_sets(campaign_id: str = ""):
 
 @router.get("/ad-sets/{ad_set_id}")
 async def get_ad_set(ad_set_id: str):
-    return {"id": ad_set_id, "campaign_id": "sim", "name": "sim-adset", "status": "ACTIVE"}
+    return {"id": ad_set_id, "campaign_id": "sim", "name": "sim-adset", "status": "active"}
 
 
 @router.get("/ads")
@@ -51,7 +51,7 @@ async def list_ads(ad_set_id: str = ""):
 
 @router.get("/ads/{ad_id}")
 async def get_ad(ad_id: str):
-    return {"id": ad_id, "ad_set_id": "sim", "name": "sim-ad", "status": "ACTIVE"}
+    return {"id": ad_id, "ad_set_id": "sim", "name": "sim-ad", "status": "active"}
 
 
 @router.get("/forms/{form_id}/leads")
