@@ -1,0 +1,18 @@
+services:
+  platforms:
+    build: ./platforms
+    container_name: omega-platforms
+    restart: unless-stopped
+    ports:
+      - "20000:20000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:20000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - omega-net
+
+networks:
+  omega-net:
+    name: omega-net
