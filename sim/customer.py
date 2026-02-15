@@ -138,27 +138,24 @@ class CustomerAgent:
     # ── Tool implementations ──
 
     def _tool_send_message(self, text: str) -> str:
-        """Mesajı discit demand webhook'una gönder."""
+        """Mesajı discit demand /message endpoint'ine gönder."""
         payload = {
-            "event": "message",
-            "data": {
-                "chat_id": self.persona.phone,
-                "body": text,
-                "sender_name": self.persona.name,
-            },
+            "phone": self.persona.phone,
+            "message": text,
+            "sender_name": self.persona.name,
         }
         try:
             resp = httpx.post(
-                f"{self.demand_url}/webhooks/whatsapp/message",
+                f"{self.demand_url}/message",
                 json=payload,
-                timeout=30.0,
+                timeout=60.0,
             )
             data = resp.json()
             logger.info(
                 "[%s] → mesaj gönderildi: %s | cevap: %s",
                 self.persona.name, text[:50], data,
             )
-            # Discit'in senkron cevapları varsa inbox'a koy
+            # Discit senkron cevap döndürür: {"responses": ["msg1", ...]}
             responses = data.get("responses", [])
             for r in responses:
                 self._inbox.put(r)

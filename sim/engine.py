@@ -1,11 +1,13 @@
-"""SimEngine — lead üretimi, müşteri yaşam döngüsü, sim time."""
+"""SimEngine — müşteri üretimi, yaşam döngüsü, sim time.
+
+Discit demand /message endpoint'i lead yoksa otomatik yaratır,
+dolayısıyla ayrı lead webhook'a gerek yok — ilk mesaj yeterli.
+"""
 
 import asyncio
 import logging
 import random
-import uuid
 
-import httpx
 from bp_agent import AgentConfig
 
 from sim.clock import SimClock
@@ -22,86 +24,56 @@ class SimEngine:
         self.clock = SimClock(speed=self.config.speed)
         self._customers: dict[str, CustomerAgent] = {}  # phone → agent
         self._tasks: list[asyncio.Task] = []
-        self._lead_gen_task: asyncio.Task | None = None
+        self._spawn_task: asyncio.Task | None = None
         self._persona_index = 0
 
     async def start(self) -> None:
-        """Lifespan'da çağrılır — lead gen loop'u başlat."""
+        """Lifespan'da çağrılır — müşteri üretim loop'u başlat."""
         logger.info(
             "SimEngine başlıyor | speed=%.0f | interval=%.0f min | max=%d",
             self.config.speed,
             self.config.lead_interval_minutes,
             self.config.max_customers,
         )
-        self._lead_gen_task = asyncio.create_task(self._lead_gen_loop())
+        self._spawn_task = asyncio.create_task(self._spawn_loop())
 
     async def stop(self) -> None:
         """Tüm task'ları durdur."""
         logger.info("SimEngine durduruluyor...")
-        if self._lead_gen_task:
-            self._lead_gen_task.cancel()
+        if self._spawn_task:
+            self._spawn_task.cancel()
         for task in self._tasks:
             task.cancel()
-        # Hepsinin bitmesini bekle
-        all_tasks = ([self._lead_gen_task] if self._lead_gen_task else []) + self._tasks
+        all_tasks = ([self._spawn_task] if self._spawn_task else []) + self._tasks
         if all_tasks:
             await asyncio.gather(*all_tasks, return_exceptions=True)
         logger.info("SimEngine durdu.")
 
-    async def _lead_gen_loop(self) -> None:
-        """Periyodik lead üretimi."""
-        # İlk lead'i hemen üret (kısa gecikme)
+    async def _spawn_loop(self) -> None:
+        """Periyodik müşteri üretimi."""
         await asyncio.sleep(2)
         try:
             while True:
+                self._cleanup_done_customers()
                 if len(self._customers) < self.config.max_customers:
-                    await self._spawn_lead()
+                    await self._spawn_customer()
                 else:
                     logger.info("Müşteri limiti doldu (%d), bekleniyor...", self.config.max_customers)
-                    self._cleanup_done_customers()
                 await self.clock.sleep_sim_minutes(self.config.lead_interval_minutes)
         except asyncio.CancelledError:
-            logger.info("Lead gen loop iptal edildi.")
+            logger.info("Spawn loop iptal edildi.")
 
-    async def _spawn_lead(self) -> None:
-        """Yeni bir persona seç, webhook at, CustomerAgent başlat."""
+    async def _spawn_customer(self) -> None:
+        """Yeni bir persona seç, CustomerAgent başlat.
+
+        İlk mesaj /message'a gidince discit otomatik lead oluşturur.
+        """
         persona = self._next_persona()
 
-        # Zaten aktif mi?
         if persona.phone in self._customers:
             logger.info("[%s] zaten aktif, atlanıyor.", persona.name)
             return
 
-        # Lead webhook'u discit'e gönder
-        lead_payload = {
-            "event": "lead",
-            "data": {
-                "leadgen_id": f"sim_{uuid.uuid4().hex[:8]}",
-                "form_id": "sim_form_001",
-                "full_name": persona.name,
-                "phone_number": persona.phone,
-                "email": f"{persona.name.lower().replace(' ', '.')}@sim.local",
-            },
-        }
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    f"{self.config.demand_url}/webhooks/meta/lead",
-                    json=lead_payload,
-                    timeout=10.0,
-                )
-                logger.info(
-                    "Lead webhook gönderildi: %s → %s",
-                    persona.name, resp.json(),
-                )
-        except Exception as e:
-            logger.error("Lead webhook gönderilemedi: %s — %s", persona.name, e)
-            return
-
-        # Kısa gecikme — müşterinin reklamı görüp yazmasını simüle et
-        await self.clock.sleep_sim_minutes(random.uniform(1, 5))
-
-        # CustomerAgent başlat
         agent_config = AgentConfig(
             provider=self.config.llm_provider,
             model=self.config.llm_model,
