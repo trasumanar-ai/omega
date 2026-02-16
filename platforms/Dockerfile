@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY platforms/bp_agent-*.whl /tmp/
 RUN pip install --no-cache-dir /tmp/bp_agent-*.whl && rm /tmp/bp_agent-*.whl
 
-# Platform kaynak kodu
+# Platform kaynak kodu (omega_chat viewer dahil: chat/omega_chat/)
 COPY platforms/ .
 
 # Sim modülü

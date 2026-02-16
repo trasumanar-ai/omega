@@ -4,10 +4,12 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from chat.router import router as chat_router
 from ads.router import router as ads_router
 from ecommerce.router import router as ecommerce_router
+from chat.omega_chat.router import router as viewer_router
 from sim.engine import SimEngine
 
 logging.basicConfig(
@@ -31,6 +33,7 @@ app = FastAPI(title="Omega Platforms", version="0.2.0", lifespan=lifespan)
 app.include_router(chat_router, prefix="/chat", tags=["chat"])
 app.include_router(ads_router, prefix="/ads", tags=["ads"])
 app.include_router(ecommerce_router, prefix="/ecommerce", tags=["ecommerce"])
+app.include_router(viewer_router, prefix="/omega-chat", tags=["viewer"])
 
 
 @app.get("/health")

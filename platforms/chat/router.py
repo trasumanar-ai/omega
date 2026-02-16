@@ -19,6 +19,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from omega_chat.hub import broadcast
+
 logger = logging.getLogger("chat.router")
 
 router = APIRouter()
@@ -70,8 +72,13 @@ async def inbound(req: InboundRequest, request: Request):
         },
     }
 
+    # Müşteri cevap verdi → önceki outbound mesajlar "okundu" sayılır
+    for m in _messages:
+        if m["chat_id"] == req.phone and m["direction"] == "outbound" and m["status"] != "read":
+            m["status"] = "read"
+
     # Lokal kayıt
-    _messages.append({
+    msg = {
         "id": msg_id,
         "channel": "whatsapp",
         "chat_id": req.phone,
@@ -80,7 +87,9 @@ async def inbound(req: InboundRequest, request: Request):
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "body": req.message,
         "status": "received",
-    })
+    }
+    _messages.append(msg)
+    await broadcast(msg)
 
     # Integrations'a forward
     integrations_url = getattr(request.app.state, "integrations_url", None)
@@ -115,6 +124,7 @@ async def send(req: SendRequest, request: Request):
         "status": "sent",
     }
     _messages.append(msg)
+    await broadcast(msg)
 
     # Mesajı müşteri agent'ına ilet
     engine = getattr(request.app.state, "sim_engine", None)
