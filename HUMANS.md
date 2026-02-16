@@ -7,7 +7,7 @@ düşünceler dağınık da, o yüzden ai özetlettirmek mantıklı olurdu herha
 
 ## İnsan ekonomisi saçmalık
 
-insan ekonomisi verimli çalışmıyor, optimize ettiğimiz sayının gdp olması ya da
+1. insan ekonomisi verimli çalışmıyor, optimize ettiğimiz sayının gdp olması ya da
 gelirin bu kadar dağınık olması çok verimsiz, zenginlerden çalmalıyız demicem
 tabii ki ama insanlar arasındaki fark bu kadar fazla olmamalı, bu bariz bir
 şekilde eğitim ve diğer kaynaklar arasında da dengesizlik olduğunu ve
@@ -16,21 +16,20 @@ kimin suçu olduğunu tartışıyor, insanlar mı sistem mi diye. açıkçası b
 çok önemli de değil bu proje contextinde, sadece iyi eğitim almamış ya da
 ekonomik potansiyeli tam olarak kullanılmayan insanların çok daha verimli
 kullanılabileceğini biliyorum, normal ekonominin bunu yapmıyor olması da
-alternatif ekonomik sistemler için çok büyük avantaj gibi duruyor. [buraları
-biraz düzenledim ilk prompt böyle değildi] 
+alternatif ekonomik sistemler için çok büyük avantaj gibi duruyor. 
 
-ayrıca birini suçlayabilmek için ortada sorumluluk almış biri olması gerekiyor
+2. ayrıca birini suçlayabilmek için ortada sorumluluk almış biri olması gerekiyor
 gibi hissediyorum, kimse dünyayı verimli bir yer yapmakla sorumlu değil. herkes
 kendinden sorumlu, dünya biraz daha jungle gibi bir yer.
 
-İnsan ekonomisinin verimsiz olduğunu kanıtlamak için çok daha fazla argüman da
+3. İnsan ekonomisinin verimsiz olduğunu kanıtlamak için çok daha fazla argüman da
 atabilirim ama tüm yazı bununla ilgili olsun istemiyorum
 
 
 
 ## Alternatif ekonomi
 
-kendi kaynaklarını verimli kullanmayı başarabilen bir topluluk ortaya çıktığı
+4. kendi kaynaklarını verimli kullanmayı başarabilen bir topluluk ortaya çıktığı
 anda (güç dengesizliği de olmayan) var olan herkesden daha kuvvetli olması zor
 görünmüyor. ayrıca tek amacı var olmaya devam etmek olan bir sistem, var olma
 açısında en iyi sistemdir. verilen tüm (material) goallar inherent bir şekilde
@@ -41,9 +40,9 @@ konusunda daha verimsiz yapar, ya da tek amacı var olmak olan bir sistemle
 karşılaştığında yok olmamak için otomatik olarak kendisinin de tüm kaynakları
 tamamen var olmaya yöneltmesi gerekir ki öbür sistem yok olduğunda stamp
 üretmeye devam edebilsin, biraz daha race condition tarzında. iki sistemin
-amaçları aynı olmadığı için cooperation olmayacağını var saydım tabii 
+amaçları aynı olmadığı için cooperation olmayacağını var saydım tabii
 
-Yeni gelen dijital zeka sistemlerimizi ekonomik kararların içine entegre etmek
+5. Yeni gelen dijital zeka sistemlerimizi ekonomik kararların içine entegre etmek
 toplumların kaynaklarını inanılmaz kullanmasını sağlayabilir. normalde bu görev
 borsada fiyat belirleyen botlara ya da insanlardaydı, omega bazlı bir ekonomiye
 geçişte bu tarz marketlere amacı omegayı artırmak olan agentlar sokarak paranın
@@ -55,10 +54,10 @@ konusuna biraz daha değineceğim.
 
 ## Omega
 
-omega ekonominin ve toplumların en verimli halini hayal etmek için bir thought
-experiment. self referancing bir formula ve amacı omegayı artırmak, o da eskiden 
+6. omega ekonominin ve toplumların en verimli halini hayal etmek için bir thought
+experiment. self referancing bir formula ve amacı omegayı artırmak, o da eskiden
 
-ortlama insanın omega artırma yeteneği   x   insan sayısı 
+ortlama insanın omega artırma yeteneği   x   insan sayısı
 
 gibi bir şeye denk geliyordu. insan sayısını artırmak için ölümü azaltıp
 (ultimately eliminate) insan artma sayısını yükseltmek gerekiyor, ortalama
@@ -79,9 +78,15 @@ olmak zorunda değil bu formül, alternatif neural network türleri arasında
 hesaplamayı zorlaştırır token bazlı sistem. enerji bazlı bir formül daha iyi
 olabilir belki)
 
+7. Omeganın self referencing olması biraz tartışma konusu, normalde herhangi bir
+amacı olan bir sistemin o amacı yerine getirebilmek için daha fazla var olmak
+isteyeceğini biliyoruz (ölüm amacın içine yedirilmediği sürece). benim yaptığım
+şey de stamp collector tarzında bir thought experiment'ı alıp kökünde bulunan
+amacı sökmek. omega herhangi bir şey olabilir, omega yerine stamp collection
+amacını da yerleştirebiliriz, ama en güçlü sistem self referencing ve var olmak
+üzerine kurulu olan.
 
-
-bu self referencing omega frame'ini takip ettiğimiz zaman ortaya alternatif bir
+8. bu self referencing omega frame'ini takip ettiğimiz zaman ortaya alternatif bir
 değer sistemi çıkıyor. para tamamen değerini kaybediyor değil, para nasıl
 insanların verdiği toplam değer ve o şeyin supply'ı arasındaki denge için bir
 indicatorsa (olabildiğince basitleştirilmiş, biliyorum) aynısı omega için de
@@ -93,10 +98,25 @@ omega ekonomisinde değer verilen şeyler birbirinden ciddi farklı oluyor, zate
 
 
 
+## Zeka??
+
+9. Yukarıdaki paragraflardan omeganın sadece zekaya dayalı bir sistem olduğu
+kanısına varmış olabilirsiniz ama omeganın temelinde yatan fikir var olma odaklı
+olması, zeka odaklı değil. var olmaya devam etmek için gereken şeyler de devamlı
+değişecektir, şu anda eksiğimiz compute olabilir, çünkü hala unified bir evren
+kuramımız yok ama materyal evrenin tamamını anladıktan sonra tüm kaynakları
+değerlendirilebilir hale getirdikten sonra zeka tam olarak ne işe yarar söylemek
+zor.
+
+10. Zeka konusunda ilginç başka bir thought experiment da bizden 100 bin kat daha
+zeki bir varlığın ne kadar capable olabileceğini hayal edemiyor oluşumuz. nasıl
+karıncalar ekonominin ne demek olduğunu comprehend edebilecek yeteneğe sahip
+değilse, biz de zeka artışı sonucunda neleri düşünebileceğimizi hayal edemeyiz,
+şu ana kadar kurduğumuz tüm mantık sistemleri temelden hatalı da olabilir.
+Materyal evrenin ötesini görebilmek ve neden var olduğumuzu anlayabilmenin tek
+yolu buradan geçiyor gibi duruyor şimdilik.
+
+
 
 discit productiona indikten sonra omega için centralized ve decentralized
-testlere başlayacağım, omega konusunda tartışılması gereken daha çok şey var.     
-
-
-
-
+testlere başlayacağım, omega konusunda tartışılması gereken daha çok şey var.

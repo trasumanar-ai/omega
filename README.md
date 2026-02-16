@@ -4,7 +4,7 @@ Simulation environment for testing [discit](https://github.com/tunagul/discit).
 
 Fake platforms, real conversations, autonomous AI customers.
 
-> For the developer's vision and thoughts behind this project, see [HUMANS.md](HUMANS.md).
+> For the developer's vision and thoughts behind this project, see [HUMANS.md](HUMANS.md) ([English](HUMANS.en.md)).
 
 ```
 PLATFORMS  (20000)  simulated external services (chat, ads, ecommerce)
