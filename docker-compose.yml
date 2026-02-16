@@ -9,6 +9,7 @@ services:
       - "20000:20000"
     environment:
       - SIM_DEMAND_URL=http://discit-demand-app:13000
+      - SIM_INTEGRATIONS_URL=http://discit-integrations-api:11000
       - SIM_SPEED=60
       - SIM_LEAD_INTERVAL_MINUTES=30
       - SIM_MAX_CUSTOMERS=10

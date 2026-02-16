@@ -20,6 +20,7 @@ logging.basicConfig(
 async def lifespan(app: FastAPI):
     engine = SimEngine()
     app.state.sim_engine = engine
+    app.state.integrations_url = engine.config.integrations_url
     await engine.start()
     yield
     await engine.stop()

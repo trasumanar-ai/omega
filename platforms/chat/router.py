@@ -5,18 +5,32 @@ Discit'in SimChatTransport'u şu endpointleri çağırır:
   POST /chat/mark-read     → okundu işaretle
   GET  /chat/media/{id}/url   → media URL
   GET  /chat/media/{id}/bytes → media indir
+
+CustomerAgent inbound akışı:
+  POST /chat/inbound       → müşteri mesajını integrations'a forward et
 """
+import logging
+import time
 import uuid
 from datetime import datetime, timezone
 
+import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
+
+logger = logging.getLogger("chat.router")
 
 router = APIRouter()
 
 # In-memory mesaj deposu
 _messages: list[dict] = []
+
+
+class InboundRequest(BaseModel):
+    phone: str
+    message: str
+    sender_name: str = ""
 
 
 class SendRequest(BaseModel):
@@ -38,6 +52,54 @@ class SendRequest(BaseModel):
 
 class MarkReadRequest(BaseModel):
     message_id: str
+
+
+@router.post("/inbound")
+async def inbound(req: InboundRequest, request: Request):
+    """CustomerAgent'tan gelen mesajı integrations'a webhook olarak forward et."""
+    msg_id = f"sim_{uuid.uuid4().hex[:12]}"
+    webhook_payload = {
+        "event": "message",
+        "data": {
+            "id": msg_id,
+            "from": req.phone,
+            "timestamp": int(time.time()),
+            "type": "text",
+            "body": req.message,
+            "sender_name": req.sender_name,
+        },
+    }
+
+    # Lokal kayıt
+    _messages.append({
+        "id": msg_id,
+        "channel": "whatsapp",
+        "chat_id": req.phone,
+        "direction": "inbound",
+        "type": "text",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "body": req.message,
+        "status": "received",
+    })
+
+    # Integrations'a forward
+    integrations_url = getattr(request.app.state, "integrations_url", None)
+    if integrations_url:
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    f"{integrations_url}/whatsapp/webhook",
+                    json=webhook_payload,
+                    timeout=30.0,
+                )
+            logger.info(
+                "Inbound forwarded to integrations: %s → %d",
+                req.phone, resp.status_code,
+            )
+        except Exception as e:
+            logger.error("Integrations forward failed: %s", e)
+
+    return {"ok": True, "id": msg_id}
 
 
 @router.post("/send")

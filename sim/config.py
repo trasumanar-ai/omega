@@ -9,6 +9,9 @@ class SimConfig(BaseSettings):
     # Discit demand webhook hedefi
     demand_url: str = "http://discit-demand-app:13000"
 
+    # Discit integrations API
+    integrations_url: str = "http://discit-integrations-api:11000"
+
     # Zaman çarpanı: 60 = 1 sim-dakika = 1 gerçek saniye
     speed: float = 60.0
 

@@ -83,7 +83,7 @@ class SimEngine:
         customer = CustomerAgent(
             persona=persona,
             clock=self.clock,
-            demand_url=self.config.demand_url,
+            platform_url="http://localhost:20000",
             config=agent_config,
         )
         self._customers[persona.phone] = customer

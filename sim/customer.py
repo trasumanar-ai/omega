@@ -54,12 +54,12 @@ class CustomerAgent:
         self,
         persona: Persona,
         clock: SimClock,
-        demand_url: str,
+        platform_url: str,
         config: AgentConfig,
     ):
         self.persona = persona
         self.clock = clock
-        self.demand_url = demand_url
+        self.platform_url = platform_url
         self._inbox: queue.Queue[str] = queue.Queue()
         self._done = False
         self._task: asyncio.Task | None = None
@@ -138,7 +138,7 @@ class CustomerAgent:
     # ── Tool implementations ──
 
     def _tool_send_message(self, text: str) -> str:
-        """Mesajı discit demand /message endpoint'ine gönder."""
+        """Mesajı omega chat platform /chat/inbound endpoint'ine gönder."""
         payload = {
             "phone": self.persona.phone,
             "message": text,
@@ -146,20 +146,16 @@ class CustomerAgent:
         }
         try:
             resp = httpx.post(
-                f"{self.demand_url}/message",
+                f"{self.platform_url}/chat/inbound",
                 json=payload,
                 timeout=60.0,
             )
-            data = resp.json()
+            resp.raise_for_status()
             logger.info(
-                "[%s] → mesaj gönderildi: %s | cevap: %s",
-                self.persona.name, text[:50], data,
+                "[%s] → mesaj gönderildi: %s",
+                self.persona.name, text[:50],
             )
-            # Discit senkron cevap döndürür: {"responses": ["msg1", ...]}
-            responses = data.get("responses", [])
-            for r in responses:
-                self._inbox.put(r)
-            return f"Mesaj gönderildi. {'Cevap geldi: ' + '; '.join(responses) if responses else 'Henüz cevap yok.'}"
+            return "Mesaj gönderildi."
         except Exception as e:
             logger.error("[%s] mesaj gönderilemedi: %s", self.persona.name, e)
             return f"Hata: mesaj gönderilemedi ({e})"
