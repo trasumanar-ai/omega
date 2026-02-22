@@ -47,6 +47,15 @@ export class GridWorld {
     return true
   }
 
+  remove(agentId: number): void {
+    const current = this.positions[agentId]
+    if (current.x < 0 || current.y < 0) {
+      return
+    }
+    this.occupancy[this.index(current)] = -1
+    this.positions[agentId] = { x: -1, y: -1 }
+  }
+
   neighbors4(coord: Coord): Coord[] {
     const candidates = [
       { x: coord.x + 1, y: coord.y },
