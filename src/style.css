@@ -1,0 +1,147 @@
+:root {
+  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  color: #1f1a17;
+  background:
+    radial-gradient(circle at 20% -10%, #f8e9be 0%, transparent 35%),
+    radial-gradient(circle at 90% 0%, #cad8a2 0%, transparent 28%),
+    #ece7dd;
+  line-height: 1.35;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+#app {
+  min-height: 100vh;
+  padding: 18px;
+}
+
+.layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: rgba(255, 252, 245, 0.9);
+  border: 1px solid rgba(31, 26, 23, 0.2);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 16px 30px rgba(31, 26, 23, 0.12);
+  display: grid;
+  gap: 14px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.2vw, 1.9rem);
+  letter-spacing: 0.01em;
+}
+
+.header p {
+  margin: 5px 0 0;
+  color: rgba(31, 26, 23, 0.75);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.controls label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.controls input[type='number'],
+.controls input[type='range'] {
+  width: 100%;
+  border: 1px solid rgba(31, 26, 23, 0.25);
+  border-radius: 8px;
+  background: #f8f4ea;
+  padding: 8px;
+  font: inherit;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  border: 1px solid rgba(31, 26, 23, 0.25);
+  border-radius: 8px;
+  background: #264653;
+  color: #fff9eb;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:hover:enabled {
+  filter: brightness(1.07);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(31, 26, 23, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 253, 249, 0.7);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.canvas-wrap {
+  width: 100%;
+  border: 1px solid rgba(31, 26, 23, 0.2);
+  border-radius: 12px;
+  background: rgba(250, 246, 236, 0.9);
+  padding: 8px;
+  overflow: auto;
+}
+
+#grid-canvas {
+  display: block;
+  margin: 0 auto;
+}
+
+@media (max-width: 880px) {
+  .controls {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  #app {
+    padding: 10px;
+  }
+
+  .layout {
+    padding: 12px;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+}
