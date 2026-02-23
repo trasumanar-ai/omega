@@ -1,14 +1,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"omega/go-sim/internal/sim"
@@ -30,17 +35,24 @@ type serverState struct {
 	seed   uint32
 	engine *sim.Simulation
 	stats  sim.TickStats
+	runLog *runLogger
 }
 
-func newServerState(initial sim.SimulationConfig) (*serverState, error) {
-	s := &serverState{config: initial}
-	if err := s.rebuildLocked(initial); err != nil {
+func newServerState(initial sim.SimulationConfig, runLog *runLogger) (*serverState, error) {
+	s := &serverState{config: initial, runLog: runLog}
+	if err := s.rebuildLocked(initial, runEndConfigChanged); err != nil {
 		return nil, err
 	}
 	return s, nil
 }
 
-func (s *serverState) rebuildLocked(cfg sim.SimulationConfig) error {
+func (s *serverState) rebuildLocked(cfg sim.SimulationConfig, reason runEndReason) error {
+	if s.engine != nil {
+		if err := s.finalizeRunLocked(reason); err != nil {
+			log.Printf("warn: failed to finalize previous run: %v", err)
+		}
+	}
+
 	seed := uint32(time.Now().UnixNano())
 	engine, err := sim.NewSimulation(cfg, seed)
 	if err != nil {
@@ -58,7 +70,19 @@ func (s *serverState) rebuildLocked(cfg sim.SimulationConfig) error {
 		Occupancy:   float64(cfg.AgentCount) / float64(maxInt(1, cfg.Width*cfg.Height)),
 		AvgEnergy:   cfg.InitialEnergy,
 	}
+	if s.runLog != nil {
+		if err := s.runLog.start(cfg, seed, s.stats); err != nil {
+			log.Printf("warn: failed to start run logging: %v", err)
+		}
+	}
 	return nil
+}
+
+func (s *serverState) finalizeRunLocked(reason runEndReason) error {
+	if s.runLog == nil {
+		return nil
+	}
+	return s.runLog.finalize(reason)
 }
 
 func (s *serverState) stateResponseLocked() stateResponse {
@@ -71,9 +95,15 @@ func (s *serverState) stateResponseLocked() stateResponse {
 
 func main() {
 	port := flag.Int("port", 8080, "HTTP port")
+	runsDir := flag.String("runs-dir", "./runs", "directory for persisted run logs")
 	flag.Parse()
 
-	state, err := newServerState(sim.DefaultConfig())
+	runLog, err := newRunLogger(*runsDir)
+	if err != nil {
+		log.Fatalf("failed to initialize run logger: %v", err)
+	}
+
+	state, err := newServerState(sim.DefaultConfig(), runLog)
 	if err != nil {
 		log.Fatalf("failed to initialize simulation: %v", err)
 	}
@@ -118,6 +148,11 @@ func main() {
 		state.mu.Lock()
 		for i := 0; i < req.Count; i++ {
 			state.stats = state.engine.Step(nil)
+			if state.runLog != nil {
+				if err := state.runLog.recordStep(state.stats); err != nil {
+					log.Printf("warn: failed to record run step: %v", err)
+				}
+			}
 		}
 		resp := state.stateResponseLocked()
 		state.mu.Unlock()
@@ -132,7 +167,7 @@ func main() {
 		}
 
 		state.mu.Lock()
-		err := state.rebuildLocked(state.config)
+		err := state.rebuildLocked(state.config, runEndManualReset)
 		resp := state.stateResponseLocked()
 		state.mu.Unlock()
 		if err != nil {
@@ -154,7 +189,7 @@ func main() {
 		}
 
 		state.mu.Lock()
-		err := state.rebuildLocked(cfg)
+		err := state.rebuildLocked(cfg, runEndConfigChanged)
 		resp := state.stateResponseLocked()
 		state.mu.Unlock()
 		if err != nil {
@@ -186,11 +221,100 @@ func main() {
 		writeJSON(w, http.StatusOK, detail)
 	})
 
+	mux.HandleFunc("/api/sim/runs", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+
+		limit := 100
+		if raw := r.URL.Query().Get("limit"); raw != "" {
+			parsed, err := strconv.Atoi(raw)
+			if err != nil || parsed < 0 {
+				writeError(w, http.StatusBadRequest, "invalid limit")
+				return
+			}
+			limit = parsed
+		}
+
+		state.mu.Lock()
+		dir := ""
+		runs := []runSummary{}
+		active := (*runSummary)(nil)
+		if state.runLog != nil {
+			dir = state.runLog.directory()
+			runs = state.runLog.listRuns(limit)
+			active = state.runLog.activeSummary()
+		}
+		state.mu.Unlock()
+
+		writeJSON(w, http.StatusOK, map[string]any{
+			"directory": dir,
+			"activeRun": active,
+			"runs":      runs,
+		})
+	})
+
+	mux.HandleFunc("/api/sim/runs/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		id := strings.TrimPrefix(r.URL.Path, "/api/sim/runs/")
+		if id == "" {
+			writeError(w, http.StatusBadRequest, "missing run id")
+			return
+		}
+
+		state.mu.Lock()
+		if state.runLog == nil {
+			state.mu.Unlock()
+			writeError(w, http.StatusNotFound, "run logger not configured")
+			return
+		}
+		record, err := state.runLog.getRun(id)
+		state.mu.Unlock()
+		if err != nil {
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, record)
+	})
+
 	addr := fmt.Sprintf(":%d", *port)
 	log.Printf("omega sim server listening on %s", addr)
-	if err := http.ListenAndServe(addr, withCORS(mux)); err != nil {
+	log.Printf("run logs directory: %s", runLog.directory())
+
+	server := &http.Server{
+		Addr:    addr,
+		Handler: withCORS(mux),
+	}
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		log.Printf("shutdown signal received")
+		state.mu.Lock()
+		if err := state.finalizeRunLocked(runEndServerShutdown); err != nil {
+			log.Printf("warn: finalize on shutdown failed: %v", err)
+		}
+		state.mu.Unlock()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("warn: server shutdown error: %v", err)
+		}
+	}()
+
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
 	}
+	state.mu.Lock()
+	if err := state.finalizeRunLocked(runEndServerShutdown); err != nil {
+		log.Printf("warn: final run persist failed: %v", err)
+	}
+	state.mu.Unlock()
 }
 
 func withCORS(next http.Handler) http.Handler {

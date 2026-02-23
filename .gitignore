@@ -19,3 +19,6 @@ lerna-debug.log*
 !.vscode/extensions.json
 .idea/
 .DS_Store
+
+# Go sim runtime artifacts
+go-sim/runs/
