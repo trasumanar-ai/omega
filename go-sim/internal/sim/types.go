@@ -193,6 +193,47 @@ type TickStats struct {
 	ActionHistogram  ActionHistogram `json:"actionHistogram"`
 }
 
+type GenomeSummary struct {
+	MutationRate       float64 `json:"mutationRate"`
+	MutationScale      float64 `json:"mutationScale"`
+	AddNeuronChance    float64 `json:"addNeuronChance"`
+	RemoveNeuronChance float64 `json:"removeNeuronChance"`
+	FruitBiasApple     float64 `json:"fruitBiasApple"`
+	FruitBiasBanana    float64 `json:"fruitBiasBanana"`
+	FruitBiasOrange    float64 `json:"fruitBiasOrange"`
+}
+
+type AgentDetail struct {
+	ID               int             `json:"id"`
+	X                int             `json:"x"`
+	Y                int             `json:"y"`
+	Energy           float64         `json:"energy"`
+	Inventory        float64         `json:"inventory"`
+	InventoryByFruit FruitInventory  `json:"inventoryByFruit"`
+	Vitamins         VitaminLevels   `json:"vitamins"`
+	Alive            bool            `json:"alive"`
+	BornTick         int             `json:"bornTick"`
+	DeathTick        int             `json:"deathTick"`
+	Age              int             `json:"age"`
+	TotalActions     int             `json:"totalActions"`
+	ActionCounts     ActionHistogram `json:"actionCounts"`
+	RecentActions    []string        `json:"recentActions"`
+	NeuronCount      int             `json:"neuronCount"`
+	NeuronEnergyCost float64         `json:"neuronEnergyCost"`
+	Genome           GenomeSummary   `json:"genome"`
+}
+
+type WorldSnapshot struct {
+	Width                 int     `json:"width"`
+	Height                int     `json:"height"`
+	TreeTypeByCell        []uint8 `json:"treeTypeByCell"`
+	GroundFruitTypeByCell []uint8 `json:"groundFruitTypeByCell"`
+	AgentX                []int   `json:"agentX"`
+	AgentY                []int   `json:"agentY"`
+	Alive                 []bool  `json:"alive"`
+	TreeIndices           []int   `json:"treeIndices"`
+}
+
 type SimulationConfig struct {
 	Width                          int     `json:"width"`
 	Height                         int     `json:"height"`

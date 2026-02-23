@@ -378,6 +378,93 @@ func (s *Simulation) IsAgentAlive(agentID int) bool {
 	return agentID >= 0 && agentID < len(s.alive) && s.alive[agentID]
 }
 
+func (s *Simulation) Snapshot() WorldSnapshot {
+	world := WorldSnapshot{
+		Width:                 s.Config.Width,
+		Height:                s.Config.Height,
+		TreeTypeByCell:        make([]uint8, len(s.treeTypeByCell)),
+		GroundFruitTypeByCell: make([]uint8, len(s.groundFruitTypeByCell)),
+		AgentX:                make([]int, len(s.AgentIDs)),
+		AgentY:                make([]int, len(s.AgentIDs)),
+		Alive:                 make([]bool, len(s.AgentIDs)),
+		TreeIndices:           make([]int, len(s.treeIndices)),
+	}
+	for i, code := range s.treeTypeByCell {
+		world.TreeTypeByCell[i] = uint8(code)
+	}
+	for i, code := range s.groundFruitTypeByCell {
+		world.GroundFruitTypeByCell[i] = uint8(code)
+	}
+	for _, agentID := range s.AgentIDs {
+		pos := s.Grid.GetPosition(agentID)
+		world.AgentX[agentID] = pos.X
+		world.AgentY[agentID] = pos.Y
+		world.Alive[agentID] = s.IsAgentAlive(agentID)
+	}
+	copy(world.TreeIndices, s.treeIndices)
+	return world
+}
+
+func (s *Simulation) GetAgentDetail(agentID int) (AgentDetail, error) {
+	if agentID < 0 || agentID >= len(s.AgentIDs) {
+		return AgentDetail{}, fmt.Errorf("agent out of range: %d", agentID)
+	}
+
+	state := s.GetAgentState(agentID)
+	log := s.actionLog[agentID]
+	counts := ActionHistogram{}
+	for _, action := range log {
+		counts.Inc(action)
+	}
+
+	recentCount := 20
+	if recentCount > len(log) {
+		recentCount = len(log)
+	}
+	recent := make([]string, 0, recentCount)
+	for i := len(log) - recentCount; i < len(log); i++ {
+		if i >= 0 {
+			recent = append(recent, log[i].String())
+		}
+	}
+
+	age := 0
+	if state.Alive {
+		age = s.tickCount - s.bornTick[agentID]
+	} else {
+		age = s.deathTick[agentID] - s.bornTick[agentID]
+	}
+
+	genome := s.genomes[agentID]
+	return AgentDetail{
+		ID:               state.ID,
+		X:                state.X,
+		Y:                state.Y,
+		Energy:           state.Energy,
+		Inventory:        state.Inventory,
+		InventoryByFruit: state.InventoryByFruit,
+		Vitamins:         state.Vitamins,
+		Alive:            state.Alive,
+		BornTick:         s.bornTick[agentID],
+		DeathTick:        s.deathTick[agentID],
+		Age:              age,
+		TotalActions:     len(log),
+		ActionCounts:     counts,
+		RecentActions:    recent,
+		NeuronCount:      len(genome.Neurons),
+		NeuronEnergyCost: s.getNeuronEnergyCost(agentID),
+		Genome: GenomeSummary{
+			MutationRate:       genome.MutationRate,
+			MutationScale:      genome.MutationScale,
+			AddNeuronChance:    genome.AddNeuronChance,
+			RemoveNeuronChance: genome.RemoveNeuronChance,
+			FruitBiasApple:     genome.FruitBiasApple,
+			FruitBiasBanana:    genome.FruitBiasBanana,
+			FruitBiasOrange:    genome.FruitBiasOrange,
+		},
+	}, nil
+}
+
 func (s *Simulation) AgentAt(x, y int) int {
 	if !s.inBounds(x, y) {
 		return -1
