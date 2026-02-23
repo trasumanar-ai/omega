@@ -17,6 +17,10 @@ import type { SimulationConfig, TickStats } from '../sim/types'
 
 export type SimConfig = GameConfig
 export type { AgentDetail }
+export type BackendStatus = {
+  connected: boolean
+  error: string | null
+}
 
 const MAX_HISTORY = 300
 
@@ -32,6 +36,10 @@ export function useSimulation() {
   const [stats, setStats] = useState<TickStats>(createInitialStats(DEFAULT_GAME_CONFIG))
   const [statsHistory, setStatsHistory] = useState<TickStats[]>([])
   const [running, setRunning] = useState(false)
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>({
+    connected: false,
+    error: null,
+  })
 
   const syncFromState = useCallback((state: SimulationStateResponse, syncConfig: boolean, resetHistory: boolean) => {
     simRef.current.applyWorld(state.world)
@@ -73,6 +81,7 @@ export function useSimulation() {
         body: JSON.stringify({ count: 1 }),
       })
       syncFromState(state, false, false)
+      setBackendStatus({ connected: true, error: null })
 
       const h = historyRef.current
       if (h.length >= MAX_HISTORY) h.shift()
@@ -80,6 +89,10 @@ export function useSimulation() {
       setStatsHistory([...h])
     } catch (err) {
       console.error('Simulation tick failed:', err)
+      setBackendStatus({
+        connected: false,
+        error: err instanceof Error ? err.message : 'Unknown backend error',
+      })
     } finally {
       inFlightRef.current = false
     }
@@ -93,8 +106,15 @@ export function useSimulation() {
         const state = await fetchJson<SimulationStateResponse>('/api/sim/state')
         if (cancelled) return
         syncFromState(state, true, true)
+        setBackendStatus({ connected: true, error: null })
       } catch (err) {
         console.error('Failed to load simulation state from Go backend:', err)
+        if (!cancelled) {
+          setBackendStatus({
+            connected: false,
+            error: err instanceof Error ? err.message : 'Unknown backend error',
+          })
+        }
       }
     }
 
@@ -162,8 +182,13 @@ export function useSimulation() {
           method: 'POST',
         })
         syncFromState(state, true, true)
+        setBackendStatus({ connected: true, error: null })
       } catch (err) {
         console.error('Simulation reset failed:', err)
+        setBackendStatus({
+          connected: false,
+          error: err instanceof Error ? err.message : 'Unknown backend error',
+        })
       } finally {
         inFlightRef.current = false
       }
@@ -187,6 +212,7 @@ export function useSimulation() {
     stats,
     statsHistory,
     running,
+    backendStatus,
     config,
     setConfig: updateConfig,
     start,

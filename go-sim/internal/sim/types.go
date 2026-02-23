@@ -224,14 +224,14 @@ type AgentDetail struct {
 }
 
 type WorldSnapshot struct {
-	Width                 int     `json:"width"`
-	Height                int     `json:"height"`
-	TreeTypeByCell        []uint8 `json:"treeTypeByCell"`
-	GroundFruitTypeByCell []uint8 `json:"groundFruitTypeByCell"`
-	AgentX                []int   `json:"agentX"`
-	AgentY                []int   `json:"agentY"`
-	Alive                 []bool  `json:"alive"`
-	TreeIndices           []int   `json:"treeIndices"`
+	Width                 int    `json:"width"`
+	Height                int    `json:"height"`
+	TreeTypeByCell        []int  `json:"treeTypeByCell"`
+	GroundFruitTypeByCell []int  `json:"groundFruitTypeByCell"`
+	AgentX                []int  `json:"agentX"`
+	AgentY                []int  `json:"agentY"`
+	Alive                 []bool `json:"alive"`
+	TreeIndices           []int  `json:"treeIndices"`
 }
 
 type SimulationConfig struct {

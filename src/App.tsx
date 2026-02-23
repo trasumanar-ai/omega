@@ -41,6 +41,7 @@ export function App() {
     sim, stats, statsHistory, running,
     toggle, step, reset,
     config, setConfig,
+    backendStatus,
     getAgentDetail,
   } = useSimulation()
 
@@ -325,6 +326,12 @@ export function App() {
         <div className="vp-hud">
           tick <strong>{stats.tick}</strong> &middot; alive <strong>{stats.aliveAgents}</strong>
         </div>
+        {!backendStatus.connected && (
+          <div className="vp-error">
+            Go backend bagli degil. Kök dizinde `npm run sim:server` ya da `cd go-sim && go run ./cmd/omega-sim-server -port 8080` calistir.
+            {backendStatus.error && <div>{backendStatus.error}</div>}
+          </div>
+        )}
         <div className="minimap-float">
           <canvas ref={miniRef} width={180} height={110} />
         </div>

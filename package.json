@@ -1,9 +1,10 @@
 {
-  "name": "econ-grid-web",
+  "name": "omega",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "sim:server": "cd go-sim && go run ./cmd/omega-sim-server -port 8080",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
@@ -17,6 +18,7 @@
   },
   "dependencies": {
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "recharts": "^3.7.0"
   }
 }

@@ -382,18 +382,18 @@ func (s *Simulation) Snapshot() WorldSnapshot {
 	world := WorldSnapshot{
 		Width:                 s.Config.Width,
 		Height:                s.Config.Height,
-		TreeTypeByCell:        make([]uint8, len(s.treeTypeByCell)),
-		GroundFruitTypeByCell: make([]uint8, len(s.groundFruitTypeByCell)),
+		TreeTypeByCell:        make([]int, len(s.treeTypeByCell)),
+		GroundFruitTypeByCell: make([]int, len(s.groundFruitTypeByCell)),
 		AgentX:                make([]int, len(s.AgentIDs)),
 		AgentY:                make([]int, len(s.AgentIDs)),
 		Alive:                 make([]bool, len(s.AgentIDs)),
 		TreeIndices:           make([]int, len(s.treeIndices)),
 	}
 	for i, code := range s.treeTypeByCell {
-		world.TreeTypeByCell[i] = uint8(code)
+		world.TreeTypeByCell[i] = int(code)
 	}
 	for i, code := range s.groundFruitTypeByCell {
-		world.GroundFruitTypeByCell[i] = uint8(code)
+		world.GroundFruitTypeByCell[i] = int(code)
 	}
 	for _, agentID := range s.AgentIDs {
 		pos := s.Grid.GetPosition(agentID)
