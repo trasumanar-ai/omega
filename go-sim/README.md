@@ -39,7 +39,9 @@ Web UI (`vite`) calls this API:
 - `POST /api/sim/step`
 - `POST /api/sim/reset`
 - `POST /api/sim/config`
+- `POST /api/sim/replay` (seed + config ile deterministik yeniden kurulum)
 - `GET /api/sim/agent/:id`
+- `GET /api/version`
 - `GET /api/sim/runs`
 - `GET /api/sim/runs/:id`
 
@@ -55,3 +57,5 @@ Each run is saved under `go-sim/runs`:
 - `run_index.json` (recent run summaries)
 - `run_<id>.json` (full run details + trace)
 - `active_run.json` (in-progress run)
+
+Run dosyalarinda `schemaVersion`, `serverVersion`, `apiVersion` alanlari bulunur.

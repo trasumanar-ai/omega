@@ -47,13 +47,17 @@ func newServerState(initial sim.SimulationConfig, runLog *runLogger) (*serverSta
 }
 
 func (s *serverState) rebuildLocked(cfg sim.SimulationConfig, reason runEndReason) error {
+	seed := uint32(time.Now().UnixNano())
+	return s.rebuildWithSeedLocked(cfg, seed, reason)
+}
+
+func (s *serverState) rebuildWithSeedLocked(cfg sim.SimulationConfig, seed uint32, reason runEndReason) error {
 	if s.engine != nil {
 		if err := s.finalizeRunLocked(reason); err != nil {
 			log.Printf("warn: failed to finalize previous run: %v", err)
 		}
 	}
 
-	seed := uint32(time.Now().UnixNano())
 	engine, err := sim.NewSimulation(cfg, seed)
 	if err != nil {
 		return err
@@ -114,7 +118,18 @@ func main() {
 			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+		writeJSON(w, http.StatusOK, map[string]any{
+			"ok":      true,
+			"version": versionPayload(),
+		})
+	})
+
+	mux.HandleFunc("/api/version", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		writeJSON(w, http.StatusOK, versionPayload())
 	})
 
 	mux.HandleFunc("/api/sim/state", func(w http.ResponseWriter, r *http.Request) {
@@ -199,6 +214,33 @@ func main() {
 		writeJSON(w, http.StatusOK, resp)
 	})
 
+	mux.HandleFunc("/api/sim/replay", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+
+		var req struct {
+			Seed   uint32               `json:"seed"`
+			Config sim.SimulationConfig `json:"config"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Sprintf("invalid replay request: %v", err))
+			return
+		}
+
+		state.mu.Lock()
+		err := state.rebuildWithSeedLocked(req.Config, req.Seed, runEndReplayRequest)
+		if err != nil {
+			state.mu.Unlock()
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		resp := state.stateResponseLocked()
+		state.mu.Unlock()
+		writeJSON(w, http.StatusOK, resp)
+	})
+
 	mux.HandleFunc("/api/sim/agent/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -249,6 +291,7 @@ func main() {
 		state.mu.Unlock()
 
 		writeJSON(w, http.StatusOK, map[string]any{
+			"version":   versionPayload(),
 			"directory": dir,
 			"activeRun": active,
 			"runs":      runs,
@@ -283,6 +326,7 @@ func main() {
 
 	addr := fmt.Sprintf(":%d", *port)
 	log.Printf("omega sim server listening on %s", addr)
+	log.Printf("server version: %s (%s, run schema %d)", serverVersion, apiVersion, runSchemaVersion)
 	log.Printf("run logs directory: %s", runLog.directory())
 
 	server := &http.Server{
@@ -345,4 +389,12 @@ func maxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func versionPayload() map[string]any {
+	return map[string]any{
+		"serverVersion":    serverVersion,
+		"apiVersion":       apiVersion,
+		"runSchemaVersion": runSchemaVersion,
+	}
 }

@@ -17,6 +17,7 @@ type runEndReason string
 const (
 	runEndManualReset      runEndReason = "manual_reset"
 	runEndConfigChanged    runEndReason = "config_changed"
+	runEndReplayRequest    runEndReason = "replay_request"
 	runEndServerShutdown   runEndReason = "server_shutdown"
 	runEndRecoveredRestart runEndReason = "recovered_after_restart"
 	runHistoryLimit                     = 400
@@ -38,41 +39,50 @@ type runTracePoint struct {
 }
 
 type runSummary struct {
-	ID          string       `json:"id"`
-	Seed        uint32       `json:"seed"`
-	StartedAt   string       `json:"startedAt"`
-	EndedAt     string       `json:"endedAt"`
-	Reason      runEndReason `json:"reason"`
-	StepCount   int          `json:"stepCount"`
-	MaxTick     int          `json:"maxTick"`
-	FinalTick   int          `json:"finalTick"`
-	FinalAlive  int          `json:"finalAlive"`
-	FinalEnergy float64      `json:"finalEnergy"`
+	ID            string       `json:"id"`
+	SchemaVersion int          `json:"schemaVersion"`
+	ServerVersion string       `json:"serverVersion"`
+	APIVersion    string       `json:"apiVersion"`
+	Seed          uint32       `json:"seed"`
+	StartedAt     string       `json:"startedAt"`
+	EndedAt       string       `json:"endedAt"`
+	Reason        runEndReason `json:"reason"`
+	StepCount     int          `json:"stepCount"`
+	MaxTick       int          `json:"maxTick"`
+	FinalTick     int          `json:"finalTick"`
+	FinalAlive    int          `json:"finalAlive"`
+	FinalEnergy   float64      `json:"finalEnergy"`
 }
 
 type runRecord struct {
-	ID        string               `json:"id"`
-	Seed      uint32               `json:"seed"`
-	StartedAt string               `json:"startedAt"`
-	EndedAt   string               `json:"endedAt"`
-	Reason    runEndReason         `json:"reason"`
-	Config    sim.SimulationConfig `json:"config"`
-	StepCount int                  `json:"stepCount"`
-	MaxTick   int                  `json:"maxTick"`
-	Final     sim.TickStats        `json:"final"`
-	Trace     []runTracePoint      `json:"trace"`
+	ID            string               `json:"id"`
+	SchemaVersion int                  `json:"schemaVersion"`
+	ServerVersion string               `json:"serverVersion"`
+	APIVersion    string               `json:"apiVersion"`
+	Seed          uint32               `json:"seed"`
+	StartedAt     string               `json:"startedAt"`
+	EndedAt       string               `json:"endedAt"`
+	Reason        runEndReason         `json:"reason"`
+	Config        sim.SimulationConfig `json:"config"`
+	StepCount     int                  `json:"stepCount"`
+	MaxTick       int                  `json:"maxTick"`
+	Final         sim.TickStats        `json:"final"`
+	Trace         []runTracePoint      `json:"trace"`
 }
 
 type activeRunRecord struct {
-	ID        string               `json:"id"`
-	Seed      uint32               `json:"seed"`
-	StartedAt string               `json:"startedAt"`
-	UpdatedAt string               `json:"updatedAt"`
-	Config    sim.SimulationConfig `json:"config"`
-	StepCount int                  `json:"stepCount"`
-	MaxTick   int                  `json:"maxTick"`
-	LastStats sim.TickStats        `json:"lastStats"`
-	Trace     []runTracePoint      `json:"trace"`
+	ID            string               `json:"id"`
+	SchemaVersion int                  `json:"schemaVersion"`
+	ServerVersion string               `json:"serverVersion"`
+	APIVersion    string               `json:"apiVersion"`
+	Seed          uint32               `json:"seed"`
+	StartedAt     string               `json:"startedAt"`
+	UpdatedAt     string               `json:"updatedAt"`
+	Config        sim.SimulationConfig `json:"config"`
+	StepCount     int                  `json:"stepCount"`
+	MaxTick       int                  `json:"maxTick"`
+	LastStats     sim.TickStats        `json:"lastStats"`
+	Trace         []runTracePoint      `json:"trace"`
 }
 
 type runLogger struct {
@@ -118,15 +128,18 @@ func (r *runLogger) directory() string {
 func (r *runLogger) start(cfg sim.SimulationConfig, seed uint32, initialStats sim.TickStats) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	r.active = &activeRunRecord{
-		ID:        createRunID(seed),
-		Seed:      seed,
-		StartedAt: now,
-		UpdatedAt: now,
-		Config:    cfg,
-		StepCount: 0,
-		MaxTick:   initialStats.Tick,
-		LastStats: initialStats,
-		Trace:     []runTracePoint{toTrace(initialStats)},
+		ID:            createRunID(seed),
+		SchemaVersion: runSchemaVersion,
+		ServerVersion: serverVersion,
+		APIVersion:    apiVersion,
+		Seed:          seed,
+		StartedAt:     now,
+		UpdatedAt:     now,
+		Config:        cfg,
+		StepCount:     0,
+		MaxTick:       initialStats.Tick,
+		LastStats:     initialStats,
+		Trace:         []runTracePoint{toTrace(initialStats)},
 	}
 	return r.saveActive()
 }
@@ -172,16 +185,19 @@ func (r *runLogger) finalize(reason runEndReason) error {
 	}
 
 	record := runRecord{
-		ID:        active.ID,
-		Seed:      active.Seed,
-		StartedAt: active.StartedAt,
-		EndedAt:   time.Now().UTC().Format(time.RFC3339Nano),
-		Reason:    reason,
-		Config:    active.Config,
-		StepCount: active.StepCount,
-		MaxTick:   active.MaxTick,
-		Final:     active.LastStats,
-		Trace:     append([]runTracePoint(nil), active.Trace...),
+		ID:            active.ID,
+		SchemaVersion: active.SchemaVersion,
+		ServerVersion: active.ServerVersion,
+		APIVersion:    active.APIVersion,
+		Seed:          active.Seed,
+		StartedAt:     active.StartedAt,
+		EndedAt:       time.Now().UTC().Format(time.RFC3339Nano),
+		Reason:        reason,
+		Config:        active.Config,
+		StepCount:     active.StepCount,
+		MaxTick:       active.MaxTick,
+		Final:         active.LastStats,
+		Trace:         append([]runTracePoint(nil), active.Trace...),
 	}
 
 	if err := r.saveRunRecord(record); err != nil {
@@ -204,16 +220,19 @@ func (r *runLogger) activeSummary() *runSummary {
 	}
 	last := r.active.LastStats
 	summary := runSummary{
-		ID:          r.active.ID,
-		Seed:        r.active.Seed,
-		StartedAt:   r.active.StartedAt,
-		EndedAt:     "",
-		Reason:      "",
-		StepCount:   r.active.StepCount,
-		MaxTick:     r.active.MaxTick,
-		FinalTick:   last.Tick,
-		FinalAlive:  last.AliveAgents,
-		FinalEnergy: last.AvgEnergy,
+		ID:            r.active.ID,
+		SchemaVersion: r.active.SchemaVersion,
+		ServerVersion: r.active.ServerVersion,
+		APIVersion:    r.active.APIVersion,
+		Seed:          r.active.Seed,
+		StartedAt:     r.active.StartedAt,
+		EndedAt:       "",
+		Reason:        "",
+		StepCount:     r.active.StepCount,
+		MaxTick:       r.active.MaxTick,
+		FinalTick:     last.Tick,
+		FinalAlive:    last.AliveAgents,
+		FinalEnergy:   last.AvgEnergy,
 	}
 	return &summary
 }
@@ -247,6 +266,7 @@ func (r *runLogger) getRun(id string) (runRecord, error) {
 	if err := json.Unmarshal(payload, &record); err != nil {
 		return runRecord{}, fmt.Errorf("decode run record: %w", err)
 	}
+	normalizeRunRecord(&record)
 	return record, nil
 }
 
@@ -262,6 +282,7 @@ func (r *runLogger) recoverActiveRun() error {
 	if err := json.Unmarshal(payload, &active); err != nil {
 		return fmt.Errorf("decode active run: %w", err)
 	}
+	normalizeActiveRunRecord(&active)
 	r.active = &active
 	if err := r.finalize(runEndRecoveredRestart); err != nil {
 		return err
@@ -286,6 +307,9 @@ func (r *runLogger) loadIndex() error {
 	var index []runSummary
 	if err := json.Unmarshal(payload, &index); err != nil {
 		return fmt.Errorf("decode run index: %w", err)
+	}
+	for i := range index {
+		normalizeRunSummary(&index[i])
 	}
 	r.runIndex = index
 	return nil
@@ -317,16 +341,55 @@ func (r *runLogger) runPath(id string) string {
 
 func summarizeRun(record runRecord) runSummary {
 	return runSummary{
-		ID:          record.ID,
-		Seed:        record.Seed,
-		StartedAt:   record.StartedAt,
-		EndedAt:     record.EndedAt,
-		Reason:      record.Reason,
-		StepCount:   record.StepCount,
-		MaxTick:     record.MaxTick,
-		FinalTick:   record.Final.Tick,
-		FinalAlive:  record.Final.AliveAgents,
-		FinalEnergy: record.Final.AvgEnergy,
+		ID:            record.ID,
+		SchemaVersion: record.SchemaVersion,
+		ServerVersion: record.ServerVersion,
+		APIVersion:    record.APIVersion,
+		Seed:          record.Seed,
+		StartedAt:     record.StartedAt,
+		EndedAt:       record.EndedAt,
+		Reason:        record.Reason,
+		StepCount:     record.StepCount,
+		MaxTick:       record.MaxTick,
+		FinalTick:     record.Final.Tick,
+		FinalAlive:    record.Final.AliveAgents,
+		FinalEnergy:   record.Final.AvgEnergy,
+	}
+}
+
+func normalizeRunSummary(summary *runSummary) {
+	if summary.SchemaVersion <= 0 {
+		summary.SchemaVersion = 0
+	}
+	if summary.ServerVersion == "" {
+		summary.ServerVersion = "legacy"
+	}
+	if summary.APIVersion == "" {
+		summary.APIVersion = "legacy"
+	}
+}
+
+func normalizeRunRecord(record *runRecord) {
+	if record.SchemaVersion <= 0 {
+		record.SchemaVersion = 0
+	}
+	if record.ServerVersion == "" {
+		record.ServerVersion = "legacy"
+	}
+	if record.APIVersion == "" {
+		record.APIVersion = "legacy"
+	}
+}
+
+func normalizeActiveRunRecord(record *activeRunRecord) {
+	if record.SchemaVersion <= 0 {
+		record.SchemaVersion = runSchemaVersion
+	}
+	if record.ServerVersion == "" {
+		record.ServerVersion = serverVersion
+	}
+	if record.APIVersion == "" {
+		record.APIVersion = apiVersion
 	}
 }
 
