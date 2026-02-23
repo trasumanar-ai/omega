@@ -23,6 +23,7 @@ export type BackendStatus = {
 }
 
 const MAX_HISTORY = 300
+const RECONNECT_MS = 2000
 
 export function useSimulation() {
   const simRef = useRef(new RemoteSimulation(DEFAULT_GAME_CONFIG.width, DEFAULT_GAME_CONFIG.height, DEFAULT_GAME_CONFIG.maxAgentSlots))
@@ -125,6 +126,35 @@ export function useSimulation() {
   }, [syncFromState])
 
   useEffect(() => {
+    if (backendStatus.connected) {
+      return
+    }
+
+    let cancelled = false
+
+    const tryReconnect = async () => {
+      try {
+        const state = await fetchJson<SimulationStateResponse>('/api/sim/state')
+        if (cancelled) return
+        syncFromState(state, true, false)
+        setBackendStatus({ connected: true, error: null })
+      } catch {
+        // Keep retrying while disconnected.
+      }
+    }
+
+    void tryReconnect()
+    const timer = window.setInterval(() => {
+      void tryReconnect()
+    }, RECONNECT_MS)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [backendStatus.connected, syncFromState])
+
+  useEffect(() => {
     if (!running) {
       if (timerRef.current !== null) {
         window.clearInterval(timerRef.current)
@@ -152,7 +182,10 @@ export function useSimulation() {
         : { ...prev, ...update }
       const normalized = normalizeGameConfig(next)
       configRef.current = normalized
-      pendingConfigRef.current = true
+      // Only send to backend if a simulation-affecting config changed (not speed)
+      if (simConfigChanged(prev, normalized)) {
+        pendingConfigRef.current = true
+      }
       return normalized
     })
   }, [])
@@ -207,6 +240,29 @@ export function useSimulation() {
     }
   }, [])
 
+  const replay = useCallback(async (seed: number, replayConfig: SimulationConfig) => {
+    setRunning(false)
+    if (inFlightRef.current) return
+    inFlightRef.current = true
+    try {
+      const state = await fetchJson<SimulationStateResponse>('/api/sim/replay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ seed, config: replayConfig }),
+      })
+      syncFromState(state, true, true)
+      setBackendStatus({ connected: true, error: null })
+    } catch (err) {
+      console.error('Replay failed:', err)
+      setBackendStatus({
+        connected: false,
+        error: err instanceof Error ? err.message : 'Unknown backend error',
+      })
+    } finally {
+      inFlightRef.current = false
+    }
+  }, [syncFromState])
+
   return {
     sim: simRef.current,
     stats,
@@ -221,6 +277,7 @@ export function useSimulation() {
     step,
     reset,
     getAgentDetail,
+    replay,
   }
 }
 
@@ -263,4 +320,12 @@ function fromSimulationConfig(input: SimulationConfig, fallback: GameConfig): Ga
 
 function numberOr(value: number | undefined, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+/** Keys that only affect UI timing, not the simulation on the backend. */
+const UI_ONLY_KEYS: ReadonlySet<keyof SimConfig> = new Set(['speed'])
+
+function simConfigChanged(a: SimConfig, b: SimConfig): boolean {
+  const keys = Object.keys(a) as Array<keyof SimConfig>
+  return keys.some(key => !UI_ONLY_KEYS.has(key) && a[key] !== b[key])
 }
