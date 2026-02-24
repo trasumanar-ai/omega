@@ -590,6 +590,10 @@ func (s *Simulation) pickValidAction(chosen ActionType, validActions []ActionTyp
 }
 
 func (s *Simulation) selectActionFromGenome(agentID int, observation Observation, validActions []ActionType) ActionType {
+	if action, ok := s.selectSurvivalAction(agentID, observation, validActions); ok {
+		return action
+	}
+
 	validActionIndices := make([]int, 0, len(validActions))
 	for _, action := range validActions {
 		validActionIndices = append(validActionIndices, int(action))
@@ -597,6 +601,61 @@ func (s *Simulation) selectActionFromGenome(agentID int, observation Observation
 	featureVector := EncodeObservation(observation)
 	chosenActionIndex := ChooseActionIndexFromGenome(s.genomes[agentID], featureVector, validActionIndices, s.rng)
 	return s.pickValidAction(actionFromIndex(chosenActionIndex), validActions)
+}
+
+func (s *Simulation) selectSurvivalAction(agentID int, observation Observation, validActions []ActionType) (ActionType, bool) {
+	has := func(target ActionType) bool {
+		for _, action := range validActions {
+			if action == target {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Always grab fruit if we are standing on it.
+	if observation.Resources.GroundFruit > 0 && has(ActionCollectFruit) {
+		return ActionCollectFruit, true
+	}
+
+	deficiencyCount := s.countVitaminDeficiencies(agentID)
+	energy := s.energy[agentID]
+
+	// Eat early when deficient or energy is in danger.
+	if has(ActionEatFruit) {
+		if deficiencyCount > 0 || energy < s.initialEnergy*0.7 {
+			return ActionEatFruit, true
+		}
+	}
+
+	fruitMoves := make([]ActionType, 0, 4)
+	if observation.Resources.NeighborFruitNorth > 0 && has(ActionMoveNorth) {
+		fruitMoves = append(fruitMoves, ActionMoveNorth)
+	}
+	if observation.Resources.NeighborFruitEast > 0 && has(ActionMoveEast) {
+		fruitMoves = append(fruitMoves, ActionMoveEast)
+	}
+	if observation.Resources.NeighborFruitSouth > 0 && has(ActionMoveSouth) {
+		fruitMoves = append(fruitMoves, ActionMoveSouth)
+	}
+	if observation.Resources.NeighborFruitWest > 0 && has(ActionMoveWest) {
+		fruitMoves = append(fruitMoves, ActionMoveWest)
+	}
+	if len(fruitMoves) > 0 {
+		return fruitMoves[s.rng.Int(0, len(fruitMoves))], true
+	}
+
+	// Trade only when we have surplus and social contact.
+	if observation.Social.AdjacentAgents > 0 && s.inventoryTotal[agentID] >= 4 && has(ActionTradeFruit) && s.rng.Next() < 0.20 {
+		return ActionTradeFruit, true
+	}
+
+	// Clone only with a clear resource/energy surplus.
+	if deficiencyCount == 0 && s.inventoryTotal[agentID] >= 3 && has(ActionCloneSelf) && s.rng.Next() < 0.08 {
+		return ActionCloneSelf, true
+	}
+
+	return ActionStay, false
 }
 
 func (s *Simulation) executeAction(agentID int, action ActionType) actionEffect {

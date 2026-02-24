@@ -9,6 +9,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), SemVer.
 - `POST /api/sim/replay` endpoint'i eklendi.
   Seed + config verilerek simulasyon deterministik sekilde ayni kosullarda tekrar kurulabiliyor.
   Mevcut run, replay baslangicindan once `replay_request` reason'i ile finalize ediliyor.
+- Go policy tarafina hayatta kalma oncelikleri eklendi.
+  Ajanlar meyve toplama/yeme ve yakin meyveye yonelme davranislarini genom fallback'ten once uygular.
 
 ### Planned
 - Agent davranis/genetik degisikliklerinde run schema migration notlari.
