@@ -30,10 +30,30 @@ type GenomeGenerationConfig struct {
 	RemoveNeuronChanceBase float64
 }
 
+const (
+	featureEnergy             = 3
+	featureGroundFruit        = 17
+	featureNeighborFruitNorth = 20
+	featureNeighborFruitEast  = 21
+	featureNeighborFruitSouth = 22
+	featureNeighborFruitWest  = 23
+)
+
 func CreateRandomGenome(rng *RNG, observationSize int, cfg GenomeGenerationConfig) AgentGenome {
+	bootstrap := bootstrapNeurons(rng, observationSize)
 	neuronCount := rng.Int(cfg.MinNeuronCount, cfg.MaxNeuronCount+1)
+	if neuronCount < len(bootstrap) {
+		neuronCount = len(bootstrap)
+	}
+	if neuronCount > cfg.MaxNeuronCount {
+		neuronCount = cfg.MaxNeuronCount
+	}
+
 	neurons := make([]NeuronGene, 0, neuronCount)
-	for i := 0; i < neuronCount; i++ {
+	for i := 0; i < len(bootstrap) && len(neurons) < neuronCount; i++ {
+		neurons = append(neurons, bootstrap[i])
+	}
+	for len(neurons) < neuronCount {
 		neurons = append(neurons, randomNeuron(rng, observationSize))
 	}
 	return AgentGenome{
@@ -103,7 +123,7 @@ func CloneGenomeWithMutation(parent AgentGenome, rng *RNG, observationSize int, 
 			neuron.Bias += jitter(rng, child.MutationScale*0.6)
 		}
 		if rng.Next() < child.MutationRate {
-			neuron.Gain = clamp(neuron.Gain+jitter(rng, child.MutationScale*0.4), 0.05, 4)
+			neuron.Gain = clamp(neuron.Gain+jitter(rng, child.MutationScale*0.4), -4, 4)
 		}
 	}
 
@@ -121,6 +141,10 @@ func CloneGenomeWithMutation(parent AgentGenome, rng *RNG, observationSize int, 
 func ChooseActionIndexFromGenome(genome AgentGenome, features []float64, validActionIndices []int, rng *RNG) int {
 	if len(validActionIndices) == 0 {
 		return 0
+	}
+	explorationRate := clamp(genome.MutationRate*0.6, 0.02, 0.25)
+	if rng.Next() < explorationRate {
+		return validActionIndices[rng.Int(0, len(validActionIndices))]
 	}
 	if len(genome.Neurons) == 0 {
 		return validActionIndices[rng.Int(0, len(validActionIndices))]
@@ -164,6 +188,40 @@ func randomNeuron(rng *RNG, observationSize int) NeuronGene {
 		Bias:         jitter(rng, 0.8),
 		Gain:         clamp(1+jitter(rng, 0.55), 0.05, 4),
 	}
+}
+
+func bootstrapNeurons(rng *RNG, observationSize int) []NeuronGene {
+	type template struct {
+		Feature int
+		Action  ActionType
+		Weight  float64
+		Bias    float64
+		Gain    float64
+	}
+
+	templates := []template{
+		{Feature: featureGroundFruit, Action: ActionCollectFruit, Weight: 2.3, Bias: 0.0, Gain: 2.0},
+		{Feature: featureEnergy, Action: ActionEatFruit, Weight: 1.5, Bias: 2.0, Gain: -0.03},
+		{Feature: featureNeighborFruitNorth, Action: ActionMoveNorth, Weight: 2.0, Bias: 0.0, Gain: 2.0},
+		{Feature: featureNeighborFruitEast, Action: ActionMoveEast, Weight: 2.0, Bias: 0.0, Gain: 2.0},
+		{Feature: featureNeighborFruitSouth, Action: ActionMoveSouth, Weight: 2.0, Bias: 0.0, Gain: 2.0},
+		{Feature: featureNeighborFruitWest, Action: ActionMoveWest, Weight: 2.0, Bias: 0.0, Gain: 2.0},
+	}
+
+	neurons := make([]NeuronGene, 0, len(templates))
+	for _, template := range templates {
+		if template.Feature < 0 || template.Feature >= observationSize {
+			continue
+		}
+		neurons = append(neurons, NeuronGene{
+			FeatureIndex: template.Feature,
+			ActionIndex:  int(template.Action),
+			Weight:       template.Weight + jitter(rng, 0.35),
+			Bias:         template.Bias + jitter(rng, 0.20),
+			Gain:         clamp(template.Gain+jitter(rng, 0.18), -4, 4),
+		})
+	}
+	return neurons
 }
 
 func jitter(rng *RNG, amplitude float64) float64 {
