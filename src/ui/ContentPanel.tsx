@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import type { SimConfig } from '../hooks/useSimulation'
-import type { TickStats } from '../sim/types'
+import type { TickStats, SimulationConfig } from '../sim/types'
+import { useRunHistory, type RunSummary, type RunDetail } from '../hooks/useRunHistory'
 import { SparkLine } from './charts/SparkLine'
 import { TimeSeriesChart } from './charts/TimeSeriesChart'
 import { ActionBarChart } from './charts/ActionBarChart'
@@ -14,9 +16,10 @@ type Props = {
   onToggle: () => void
   onStep: () => void
   onReset: () => void
+  onReplay?: (seed: number, config: SimulationConfig) => void
 }
 
-export function ContentPanel({ section, config, onConfig, stats, statsHistory, running, onToggle, onStep, onReset }: Props) {
+export function ContentPanel({ section, config, onConfig, stats, statsHistory, running, onToggle, onStep, onReset, onReplay }: Props) {
   return (
     <div className="content-panel">
       <div className="cp-body">
@@ -40,6 +43,9 @@ export function ContentPanel({ section, config, onConfig, stats, statsHistory, r
         )}
         {section === 'config' && (
           <ConfigContent config={config} onConfig={onConfig} />
+        )}
+        {section === 'history' && (
+          <HistoryContent onReplay={onReplay} />
         )}
       </div>
     </div>
@@ -207,6 +213,109 @@ function ConfigContent({ config, onConfig }: { config: SimConfig; onConfig: (u: 
         <InlineField label="E gain" value={config.fruitEnergyGain} onChange={v => onConfig({ fruitEnergyGain: v })} min={0.1} max={100} step={0.1} />
         <InlineField label="Trade amt" value={config.tradeAmount} onChange={v => onConfig({ tradeAmount: v })} min={1} max={20} />
       </Group>
+    </>
+  )
+}
+
+// ── History ──
+
+function HistoryContent({ onReplay }: { onReplay?: (seed: number, config: SimulationConfig) => void }) {
+  const { runs, selectedRun, loading, refresh, selectRun, clearSelection } = useRunHistory()
+
+  useEffect(() => { void refresh() }, [refresh])
+
+  if (selectedRun) {
+    return <RunDetailView run={selectedRun} onBack={clearSelection} onReplay={onReplay} />
+  }
+
+  return (
+    <>
+      <div className="btn-row">
+        <button className="btn" onClick={() => void refresh()} disabled={loading}>
+          {loading ? 'Loading...' : 'Refresh'}
+        </button>
+      </div>
+      {runs.length === 0 && !loading && (
+        <div className="ts-chart-empty" style={{ height: 80 }}>No runs recorded yet</div>
+      )}
+      {runs.map(run => (
+        <RunCard key={run.id} run={run} onClick={() => void selectRun(run.id)} />
+      ))}
+    </>
+  )
+}
+
+function RunCard({ run, onClick }: { run: RunSummary; onClick: () => void }) {
+  const shortId = run.id.length > 12 ? run.id.slice(0, 12) + '...' : run.id
+  const date = run.startedAt ? new Date(run.startedAt).toLocaleString() : ''
+  return (
+    <button className="run-card" onClick={onClick}>
+      <div className="run-card-header">
+        <span className="run-card-id">{shortId}</span>
+        <span className="run-reason" data-reason={run.reason}>{run.reason}</span>
+      </div>
+      <div className="run-card-date">{date}</div>
+      <div className="run-card-stats">
+        <span>tick {run.finalTick}</span>
+        <span>alive {run.finalAlive}</span>
+        <span>energy {run.finalEnergy.toFixed(1)}</span>
+        <span>{run.stepCount} steps</span>
+      </div>
+    </button>
+  )
+}
+
+function RunDetailView({ run, onBack, onReplay }: {
+  run: RunDetail
+  onBack: () => void
+  onReplay?: (seed: number, config: SimulationConfig) => void
+}) {
+  return (
+    <>
+      <div className="btn-row">
+        <button className="btn history-back" onClick={onBack}>&larr; Back</button>
+        {onReplay && (
+          <button className="btn btn-primary" onClick={() => onReplay(run.seed, run.config)}>
+            Replay
+          </button>
+        )}
+      </div>
+
+      <div className="cp-stats-grid">
+        <StatCard label="Seed" value={String(run.seed)} />
+        <StatCard label="Steps" value={String(run.stepCount)} />
+        <StatCard label="Max Tick" value={String(run.maxTick)} />
+        <StatCard label="Final Tick" value={String(run.final.tick)} />
+        <StatCard label="Final Alive" value={String(run.final.aliveAgents)} />
+        <StatCard label="Avg Energy" value={run.final.avgEnergy.toFixed(1)} />
+      </div>
+
+      <div className="run-card-date" style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+        {new Date(run.startedAt).toLocaleString()} &mdash; {run.endedAt ? new Date(run.endedAt).toLocaleString() : 'active'}
+        {' '}<span className="run-reason" data-reason={run.reason}>{run.reason}</span>
+      </div>
+
+      <TimeSeriesChart title="Population" data={run.trace}
+        series={[
+          { key: 'aliveAgents', color: '#171717', label: 'Alive' },
+          { key: 'deathsThisTick', color: '#e11d48', label: 'Deaths', type: 'area' },
+        ]} height={160} />
+
+      <TimeSeriesChart title="Avg Energy" data={run.trace}
+        series={[{ key: 'avgEnergy', color: '#f59e0b', label: 'Avg Energy' }]} height={140} />
+
+      <TimeSeriesChart title="Fruit Economy" data={run.trace} stacked height={160}
+        series={[
+          { key: 'collectedFruit', color: '#d97706', label: 'Collected' },
+          { key: 'eatenFruit', color: '#16a34a', label: 'Eaten' },
+          { key: 'tradedFruit', color: '#2563eb', label: 'Traded' },
+        ]} />
+
+      <TimeSeriesChart title="Ground Fruit" data={run.trace}
+        series={[{ key: 'groundFruitTotal', color: '#16a34a', label: 'Ground Fruit' }]} height={140} />
+
+      <TimeSeriesChart title="Deficient Agents" data={run.trace}
+        series={[{ key: 'deficientAgents', color: '#e11d48', label: 'Deficient', type: 'area' }]} height={120} />
     </>
   )
 }

@@ -22,12 +22,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), SemVer.
   Baslangic populasyonu meyve toplama/yeme ve yakin meyveye gitme davranislarini genlerden ogrenebilir hale getirildi.
 - Meyve, vitamin ve ureme temelli yeni klasik sim cekirdegi eklendi.
   `collect_fruit`, `eat_fruit`, `trade_fruit`, `clone_self` aksiyonlari; agac/meyve dagilimi, vitamin eksikligi, envanter dagilimi ve genom mutasyonu ile birlikte calisiyor.
+- Klasik sim UI tarafina run history ve replay gorunumu eklendi.
+  `History` sekmesi kaydedilmis run listesini, trace grafiklerini ve `POST /api/sim/replay` uzerinden ayni seed + config ile tekrar baslatmayi destekliyor.
 
 ### Changed
 - Frontend girisi ekonomi workbench'i okuyacak sekilde guncellendi.
   `src/EconApp.tsx` ve ilgili hook/type dosyalari ile CLI'dan uretilen experiment sonuclari, compare/lab session'lari ve ekonomi state'i UI tarafinda okunabilir hale geldi.
 - Vite dev server proxy ve npm script'leri ekonomi API'si ile birlikte calisacak sekilde guncellendi.
 - Gecici experiment ve lab result artefact'lari `.gitignore` altina alindi.
+- Klasik sim session yonetimi `speed` gibi UI-only config degisikliklerinde aktif run'i finalize etmeyecek sekilde duzeltildi.
+- Klasik sim sidebar'i config/charts tab'lari, meyve/vitamin sparkline'lari ve alt grafik paneli ile genisletildi.
 
 ### Planned
 - Agent davranis/genetik degisikliklerinde run schema migration notlari.

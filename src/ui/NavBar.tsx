@@ -9,6 +9,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'population', label: 'Population', icon: '\u2630' },
   { id: 'economy', label: 'Economy', icon: '\u2261' },
   { id: 'config', label: 'Config', icon: '\u2699' },
+  { id: 'history', label: 'History', icon: '\u23F1' },
 ]
 
 type Props = {

@@ -72,9 +72,11 @@ export class GameSession {
       : { ...this.config, ...update }
     this.config = normalizeGameConfig(next)
     if (!sameConfig(previous, this.config)) {
-      this.finalizeActiveRun('config_changed')
+      if (simConfigChanged(previous, this.config)) {
+        this.finalizeActiveRun('config_changed')
+        this.dirty = true
+      }
     }
-    this.dirty = true
     return this.config
   }
 
@@ -134,4 +136,12 @@ export class GameSession {
 function sameConfig(a: GameConfig, b: GameConfig): boolean {
   const keys = Object.keys(a) as Array<keyof GameConfig>
   return keys.every(key => a[key] === b[key])
+}
+
+/** Keys that only affect UI timing, not the simulation itself. */
+const UI_ONLY_KEYS: ReadonlySet<keyof GameConfig> = new Set(['speed'])
+
+function simConfigChanged(a: GameConfig, b: GameConfig): boolean {
+  const keys = Object.keys(a) as Array<keyof GameConfig>
+  return keys.some(key => !UI_ONLY_KEYS.has(key) && a[key] !== b[key])
 }
