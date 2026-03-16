@@ -22,3 +22,5 @@ lerna-debug.log*
 
 # Go sim runtime artifacts
 go-sim/runs/
+go-sim/lab-results/
+go-sim/experiment-results/

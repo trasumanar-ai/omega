@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "sim:server": "cd go-sim && go run ./cmd/omega-sim-server -port 8080",
+    "econ:server": "cd go-sim && go run ./cmd/omega-econ-server -port 8090",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"

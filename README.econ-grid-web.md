@@ -1,6 +1,6 @@
-# econ-grid-web
+# Omega
 
-Vite + TypeScript + Canvas API ile yazilmis grid tabanli simulasyon MVP'si.
+Vite + React + TypeScript ile yazilmis ekonomi simulasyonu.
 
 ## Ne var?
 - Grid uzerinde tek hucre kaplayan ajanlar
@@ -11,8 +11,11 @@ Vite + TypeScript + Canvas API ile yazilmis grid tabanli simulasyon MVP'si.
 ## Calistirma
 ```bash
 npm install
+npm run sim:server
 npm run dev
 ```
+
+`sim:server` komutu ayri terminalde calismalidir.
 
 ## Build
 ```bash
