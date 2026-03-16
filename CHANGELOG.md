@@ -20,8 +20,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), SemVer.
 - Genetik policy tarafina hayatta kalma bootstrap nöronlari eklendi.
   Aksiyon secimi runtime kurali degil, tamamen genom skorlamasi + mutasyon temelli kaliyor.
   Baslangic populasyonu meyve toplama/yeme ve yakin meyveye gitme davranislarini genlerden ogrenebilir hale getirildi.
-- Vitamin mekanikleri MVP icin gecici olarak devre disi birakildi.
-  Ureme ve hayatta kalma su anda enerji + kaynak akisi uzerinden ilerliyor.
+- Meyve, vitamin ve ureme temelli yeni klasik sim cekirdegi eklendi.
+  `collect_fruit`, `eat_fruit`, `trade_fruit`, `clone_self` aksiyonlari; agac/meyve dagilimi, vitamin eksikligi, envanter dagilimi ve genom mutasyonu ile birlikte calisiyor.
 
 ### Changed
 - Frontend girisi ekonomi workbench'i okuyacak sekilde guncellendi.
