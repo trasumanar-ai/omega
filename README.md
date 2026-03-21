@@ -1,69 +1,28 @@
 # Omega
 
-Country-level economic simulation with energy networks, resource trading, and AI-driven decision making.
+Repo is under active rewrite. Architecture, API shape, and product direction are intentionally unstable.
 
-> For the philosophy behind this project, see [HUMANS.md](HUMANS.md) ([English](HUMANS.en.md)).
-
-## What it does
-
-4 countries on a network extract resources (coal, oil, copper, silicon), generate energy, trade with neighbors, and build infrastructure. Each country makes build decisions via heuristic or LLM. Countries that can't meet energy demand lose stability and eventually die.
-
-3 market algorithms: `no_trade`, `linear`, `scarcity_spike`.
-
-## Quick start
+## Run
 
 ```bash
 npm install
-
-# Terminal 1: Go backend
 npm run server
-
-# Terminal 2: Frontend
 npm run dev
 ```
 
-Frontend: http://localhost:20000
-Backend API: http://localhost:8090
+- UI: `http://localhost:20000`
+- API: `http://localhost:8090`
 
-### LLM decisions (optional)
+## Optional LLM
 
-Set `OPENROUTER_API_KEY` env var before starting the backend. Default model: `minimax/minimax-m2.5`.
-
-## Project structure
-
-```
-omega/
-├── src/
-│   ├── web/                      # React frontend (Vite + TypeScript)
-│   │   ├── EconApp.tsx           # Main UI
-│   │   ├── econ/types.ts         # Type definitions
-│   │   ├── hooks/useEconSimulation.ts
-│   │   └── ui/charts/            # Recharts wrappers
-│   │
-│   └── server/                   # Go backend
-│       ├── internal/econ/        # Simulation engine
-│       ├── cmd/serve/            # HTTP API server
-│       └── cmd/experiment/       # CLI experiment runner
-│
-├── IDEAS.md                      # Future direction: AI Government experiments
-└── HUMANS.md                     # Project philosophy
+```bash
+export OPENROUTER_API_KEY=...
+export ECON_LLM_MODEL=deepseek/deepseek-chat-v3-0324
 ```
 
-## API
+## Current Rule
 
-All endpoints under `/api/econ/`:
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/state` | Current world state |
-| POST | `/step` | Advance N ticks |
-| POST | `/reset` | Reset simulation |
-| POST | `/config` | Update config and reset |
-| GET | `/runs` | List past runs |
-| GET | `/runs/:id` | Get run details |
-| POST | `/compare` | Run algorithm comparison |
-| GET | `/lab` | Lab sessions |
-| GET | `/experiments` | CLI experiment results |
+Optimize for iteration speed. Treat in-repo docs as provisional unless they are needed to run the code.
 
 ## License
 
