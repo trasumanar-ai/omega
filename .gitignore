@@ -15,3 +15,6 @@ dist-ssr/
 
 # Runtime output
 output/
+src/backend/runs/
+src/backend/lab-results/
+src/backend/experiment-results/
