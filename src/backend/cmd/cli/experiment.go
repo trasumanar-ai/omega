@@ -11,10 +11,10 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"omega/server/internal/econ"
+	"omega/backend/internal/econ"
 )
 
-const defaultExperimentDir = "experiment-results"
+const defaultExperimentDir = "../../output/experiment-results"
 
 type experimentSpec struct {
 	Version              int                      `json:"version"`

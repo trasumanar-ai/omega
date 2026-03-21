@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"omega/server/internal/econ"
+	"omega/backend/internal/econ"
 )
 
 type labArchiveSaveRequest struct {

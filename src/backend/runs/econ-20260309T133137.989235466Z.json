@@ -1,0 +1,644 @@
+{
+  "id": "econ-20260309T133137.989235466Z",
+  "status": "running",
+  "startedAt": "2026-03-09T13:31:37Z",
+  "updatedAt": "2026-03-09T13:31:37Z",
+  "filePath": "runs/econ-20260309T133137.989235466Z.json",
+  "llmMode": "heuristic",
+  "llmModel": "",
+  "config": {
+    "countries": [
+      {
+        "id": "coalreach",
+        "name": "Coalreach",
+        "x": 0.18,
+        "y": 0.34,
+        "deposits": {
+          "coal": 720,
+          "oil": 60,
+          "copper": 220,
+          "silicon": 40
+        },
+        "extractors": {
+          "coal": 7.2,
+          "oil": 0.8,
+          "copper": 1.8,
+          "silicon": 0.4
+        },
+        "assets": {
+          "coalPlant": 9,
+          "oilPlant": 1.5,
+          "solarFarm": 1.2,
+          "windFarm": 0.8
+        },
+        "sunPotential": 0.55,
+        "windPotential": 0.4,
+        "baseDemand": 21,
+        "startingTreasury": 140,
+        "startingReserve": 18,
+        "infrastructure": 2.3,
+        "computeEfficiency": 0.14
+      },
+      {
+        "id": "petroport",
+        "name": "Petroport",
+        "x": 0.42,
+        "y": 0.72,
+        "deposits": {
+          "coal": 160,
+          "oil": 560,
+          "copper": 140,
+          "silicon": 60
+        },
+        "extractors": {
+          "coal": 1.6,
+          "oil": 6.1,
+          "copper": 1.1,
+          "silicon": 0.5
+        },
+        "assets": {
+          "coalPlant": 2.5,
+          "oilPlant": 8,
+          "solarFarm": 1,
+          "windFarm": 0.7
+        },
+        "sunPotential": 0.65,
+        "windPotential": 0.45,
+        "baseDemand": 22,
+        "startingTreasury": 155,
+        "startingReserve": 16,
+        "infrastructure": 2.5,
+        "computeEfficiency": 0.18
+      },
+      {
+        "id": "silica",
+        "name": "Silica",
+        "x": 0.7,
+        "y": 0.28,
+        "deposits": {
+          "coal": 120,
+          "oil": 80,
+          "copper": 120,
+          "silicon": 620
+        },
+        "extractors": {
+          "coal": 1.2,
+          "oil": 0.7,
+          "copper": 1,
+          "silicon": 5.6
+        },
+        "assets": {
+          "coalPlant": 2,
+          "oilPlant": 1.5,
+          "solarFarm": 4.6,
+          "windFarm": 1.1
+        },
+        "sunPotential": 1.05,
+        "windPotential": 0.55,
+        "baseDemand": 20,
+        "startingTreasury": 150,
+        "startingReserve": 14,
+        "infrastructure": 2.2,
+        "computeEfficiency": 0.25
+      },
+      {
+        "id": "aurora",
+        "name": "Aurora",
+        "x": 0.83,
+        "y": 0.68,
+        "deposits": {
+          "coal": 110,
+          "oil": 70,
+          "copper": 260,
+          "silicon": 90
+        },
+        "extractors": {
+          "coal": 1,
+          "oil": 0.7,
+          "copper": 2,
+          "silicon": 0.8
+        },
+        "assets": {
+          "coalPlant": 1.8,
+          "oilPlant": 1.2,
+          "solarFarm": 3.4,
+          "windFarm": 5.2
+        },
+        "sunPotential": 0.98,
+        "windPotential": 1.22,
+        "baseDemand": 19,
+        "startingTreasury": 145,
+        "startingReserve": 15,
+        "infrastructure": 2.4,
+        "computeEfficiency": 0.22
+      }
+    ],
+    "routes": [
+      {
+        "a": "coalreach",
+        "b": "petroport",
+        "capacity": 16
+      },
+      {
+        "a": "coalreach",
+        "b": "silica",
+        "capacity": 12
+      },
+      {
+        "a": "petroport",
+        "b": "aurora",
+        "capacity": 14
+      },
+      {
+        "a": "silica",
+        "b": "aurora",
+        "capacity": 16
+      },
+      {
+        "a": "petroport",
+        "b": "silica",
+        "capacity": 10
+      }
+    ],
+    "marketAlgorithm": "linear",
+    "coalEnergyPerUnit": 2.35,
+    "oilEnergyPerUnit": 2.55,
+    "solarUnitOutput": 2.1,
+    "windUnitOutput": 2.2,
+    "computeEfficiencyDividend": 0.55,
+    "localLossRate": 0.11,
+    "tradeLossRate": 0.09,
+    "computeLossDividend": 1.4,
+    "energyReserveBase": 14,
+    "energyReservePerInfra": 3.8,
+    "gridCapacityBase": 10,
+    "gridCapacityPerInfra": 8,
+    "routeInfraScale": 0.14,
+    "computeUpkeepBase": 1.6,
+    "computeUpkeepScale": 0.2,
+    "infraUpkeepScale": 0.9,
+    "energySalePrice": 1.6,
+    "emergencyEnergyPrice": 3.2,
+    "emergencyEnergyPerTick": 4.5,
+    "coalPrice": 2.6,
+    "oilPrice": 2.9,
+    "copperPrice": 3.8,
+    "siliconPrice": 4.4,
+    "industrialOutputPrice": 2.2,
+    "industrialOutputScale": 0.34,
+    "stabilityPenalty": 1.15,
+    "stabilityRecovery": 0.35,
+    "energyBuildTreasury": 42,
+    "energyBuildCopper": 6,
+    "energyBuildSilicon": 1,
+    "coalPlantBuildGain": 4.5,
+    "oilPlantBuildGain": 4.2,
+    "solarBuildGain": 3.1,
+    "windBuildGain": 3.1,
+    "computeBuildTreasury": 36,
+    "computeBuildCopper": 5,
+    "computeBuildSilicon": 8,
+    "computeEfficiencyGain": 0.12,
+    "maxComputeEfficiency": 1.2,
+    "infrastructureTreasury": 34,
+    "infrastructureCopper": 7,
+    "infrastructureGain": 0.55,
+    "tradeEnergyShare": 0.65,
+    "tradeCargoShare": 0.35
+  },
+  "records": [
+    {
+      "tick": 0,
+      "recordedAt": "2026-03-09T13:31:37Z",
+      "stats": {
+        "tick": 0,
+        "livingCountries": 4,
+        "totalEnergyGenerated": 0,
+        "totalEnergyDelivered": 0,
+        "totalEnergyTraded": 0,
+        "totalCargoTraded": 0,
+        "totalShortage": 0,
+        "totalTreasury": 0,
+        "avgComputeEfficiency": 0,
+        "energyBuilds": 0,
+        "computeBuilds": 0,
+        "infraBuilds": 0,
+        "coalRemaining": 0,
+        "oilRemaining": 0,
+        "copperRemaining": 0,
+        "siliconRemaining": 0
+      },
+      "world": {
+        "tick": 0,
+        "countries": [
+          {
+            "id": "coalreach",
+            "name": "Coalreach",
+            "x": 0.18,
+            "y": 0.34,
+            "alive": true,
+            "stability": 100,
+            "treasury": 140,
+            "energyReserve": 18,
+            "reserveCapacity": 22.74,
+            "gridCapacity": 28.4,
+            "infrastructure": 2.3,
+            "computeEfficiency": 0.14,
+            "baseDemand": 21,
+            "deposits": {
+              "coal": 720,
+              "oil": 60,
+              "copper": 220,
+              "silicon": 40
+            },
+            "stockpiles": {
+              "coal": 0,
+              "oil": 0,
+              "copper": 0,
+              "silicon": 0
+            },
+            "assets": {
+              "coalPlant": 9,
+              "oilPlant": 1.5,
+              "solarFarm": 1.2,
+              "windFarm": 0.8
+            },
+            "lastDemand": 0,
+            "lastGeneratedEnergy": 0,
+            "lastDeliveredEnergy": 0,
+            "lastImportedEnergy": 0,
+            "lastExportedEnergy": 0,
+            "lastShortage": 0,
+            "lastTreasuryDelta": 0,
+            "lastTradeRevenue": 0,
+            "lastTradeSpend": 0,
+            "lastIndustrialRevenue": 0,
+            "lastEmergencySpend": 0,
+            "lastBuildSpend": 0,
+            "lastBuildFocus": "hold",
+            "lastBuildKind": "none",
+            "lastBuildSuccess": false,
+            "lastBuildFailure": "",
+            "lastDecisionSource": "",
+            "lastDecisionModel": "",
+            "lastDecisionSummary": "",
+            "lastDecisionError": "",
+            "lastDecisionUsage": {
+              "promptTokens": 0,
+              "completionTokens": 0,
+              "totalTokens": 0
+            },
+            "marketQuotes": null
+          },
+          {
+            "id": "petroport",
+            "name": "Petroport",
+            "x": 0.42,
+            "y": 0.72,
+            "alive": true,
+            "stability": 100,
+            "treasury": 155,
+            "energyReserve": 16,
+            "reserveCapacity": 23.5,
+            "gridCapacity": 30,
+            "infrastructure": 2.5,
+            "computeEfficiency": 0.18,
+            "baseDemand": 22,
+            "deposits": {
+              "coal": 160,
+              "oil": 560,
+              "copper": 140,
+              "silicon": 60
+            },
+            "stockpiles": {
+              "coal": 0,
+              "oil": 0,
+              "copper": 0,
+              "silicon": 0
+            },
+            "assets": {
+              "coalPlant": 2.5,
+              "oilPlant": 8,
+              "solarFarm": 1,
+              "windFarm": 0.7
+            },
+            "lastDemand": 0,
+            "lastGeneratedEnergy": 0,
+            "lastDeliveredEnergy": 0,
+            "lastImportedEnergy": 0,
+            "lastExportedEnergy": 0,
+            "lastShortage": 0,
+            "lastTreasuryDelta": 0,
+            "lastTradeRevenue": 0,
+            "lastTradeSpend": 0,
+            "lastIndustrialRevenue": 0,
+            "lastEmergencySpend": 0,
+            "lastBuildSpend": 0,
+            "lastBuildFocus": "hold",
+            "lastBuildKind": "none",
+            "lastBuildSuccess": false,
+            "lastBuildFailure": "",
+            "lastDecisionSource": "",
+            "lastDecisionModel": "",
+            "lastDecisionSummary": "",
+            "lastDecisionError": "",
+            "lastDecisionUsage": {
+              "promptTokens": 0,
+              "completionTokens": 0,
+              "totalTokens": 0
+            },
+            "marketQuotes": null
+          },
+          {
+            "id": "silica",
+            "name": "Silica",
+            "x": 0.7,
+            "y": 0.28,
+            "alive": true,
+            "stability": 100,
+            "treasury": 150,
+            "energyReserve": 14,
+            "reserveCapacity": 22.36,
+            "gridCapacity": 27.6,
+            "infrastructure": 2.2,
+            "computeEfficiency": 0.25,
+            "baseDemand": 20,
+            "deposits": {
+              "coal": 120,
+              "oil": 80,
+              "copper": 120,
+              "silicon": 620
+            },
+            "stockpiles": {
+              "coal": 0,
+              "oil": 0,
+              "copper": 0,
+              "silicon": 0
+            },
+            "assets": {
+              "coalPlant": 2,
+              "oilPlant": 1.5,
+              "solarFarm": 4.6,
+              "windFarm": 1.1
+            },
+            "lastDemand": 0,
+            "lastGeneratedEnergy": 0,
+            "lastDeliveredEnergy": 0,
+            "lastImportedEnergy": 0,
+            "lastExportedEnergy": 0,
+            "lastShortage": 0,
+            "lastTreasuryDelta": 0,
+            "lastTradeRevenue": 0,
+            "lastTradeSpend": 0,
+            "lastIndustrialRevenue": 0,
+            "lastEmergencySpend": 0,
+            "lastBuildSpend": 0,
+            "lastBuildFocus": "hold",
+            "lastBuildKind": "none",
+            "lastBuildSuccess": false,
+            "lastBuildFailure": "",
+            "lastDecisionSource": "",
+            "lastDecisionModel": "",
+            "lastDecisionSummary": "",
+            "lastDecisionError": "",
+            "lastDecisionUsage": {
+              "promptTokens": 0,
+              "completionTokens": 0,
+              "totalTokens": 0
+            },
+            "marketQuotes": null
+          },
+          {
+            "id": "aurora",
+            "name": "Aurora",
+            "x": 0.83,
+            "y": 0.68,
+            "alive": true,
+            "stability": 100,
+            "treasury": 145,
+            "energyReserve": 15,
+            "reserveCapacity": 23.119999999999997,
+            "gridCapacity": 29.2,
+            "infrastructure": 2.4,
+            "computeEfficiency": 0.22,
+            "baseDemand": 19,
+            "deposits": {
+              "coal": 110,
+              "oil": 70,
+              "copper": 260,
+              "silicon": 90
+            },
+            "stockpiles": {
+              "coal": 0,
+              "oil": 0,
+              "copper": 0,
+              "silicon": 0
+            },
+            "assets": {
+              "coalPlant": 1.8,
+              "oilPlant": 1.2,
+              "solarFarm": 3.4,
+              "windFarm": 5.2
+            },
+            "lastDemand": 0,
+            "lastGeneratedEnergy": 0,
+            "lastDeliveredEnergy": 0,
+            "lastImportedEnergy": 0,
+            "lastExportedEnergy": 0,
+            "lastShortage": 0,
+            "lastTreasuryDelta": 0,
+            "lastTradeRevenue": 0,
+            "lastTradeSpend": 0,
+            "lastIndustrialRevenue": 0,
+            "lastEmergencySpend": 0,
+            "lastBuildSpend": 0,
+            "lastBuildFocus": "hold",
+            "lastBuildKind": "none",
+            "lastBuildSuccess": false,
+            "lastBuildFailure": "",
+            "lastDecisionSource": "",
+            "lastDecisionModel": "",
+            "lastDecisionSummary": "",
+            "lastDecisionError": "",
+            "lastDecisionUsage": {
+              "promptTokens": 0,
+              "completionTokens": 0,
+              "totalTokens": 0
+            },
+            "marketQuotes": null
+          }
+        ],
+        "routes": [
+          {
+            "a": "coalreach",
+            "b": "petroport",
+            "capacity": 16,
+            "lastEnergyAB": 0,
+            "lastEnergyBA": 0,
+            "lastCargoAB": 0,
+            "lastCargoBA": 0,
+            "effectiveCap": 0
+          },
+          {
+            "a": "coalreach",
+            "b": "silica",
+            "capacity": 12,
+            "lastEnergyAB": 0,
+            "lastEnergyBA": 0,
+            "lastCargoAB": 0,
+            "lastCargoBA": 0,
+            "effectiveCap": 0
+          },
+          {
+            "a": "petroport",
+            "b": "aurora",
+            "capacity": 14,
+            "lastEnergyAB": 0,
+            "lastEnergyBA": 0,
+            "lastCargoAB": 0,
+            "lastCargoBA": 0,
+            "effectiveCap": 0
+          },
+          {
+            "a": "silica",
+            "b": "aurora",
+            "capacity": 16,
+            "lastEnergyAB": 0,
+            "lastEnergyBA": 0,
+            "lastCargoAB": 0,
+            "lastCargoBA": 0,
+            "effectiveCap": 0
+          },
+          {
+            "a": "petroport",
+            "b": "silica",
+            "capacity": 10,
+            "lastEnergyAB": 0,
+            "lastEnergyBA": 0,
+            "lastCargoAB": 0,
+            "lastCargoBA": 0,
+            "effectiveCap": 0
+          }
+        ]
+      },
+      "market": {
+        "energyPrice": 1.6,
+        "emergencyEnergyPrice": 3.2,
+        "coalPrice": 2.6,
+        "oilPrice": 2.9,
+        "copperPrice": 3.8,
+        "siliconPrice": 4.4,
+        "energyBuildTreasury": 42,
+        "computeBuildTreasury": 36,
+        "infrastructureTreasury": 34,
+        "totalDemand": 87.60253692170807,
+        "totalGenerated": 0,
+        "totalDelivered": 0,
+        "totalImported": 0,
+        "totalExported": 0,
+        "totalShortage": 0,
+        "totalTreasury": 590,
+        "countries": [
+          {
+            "id": "coalreach",
+            "name": "Coalreach",
+            "treasury": 140,
+            "treasuryDelta": 0,
+            "energyReserve": 18,
+            "demand": 22.9322191272052,
+            "generatedEnergy": 0,
+            "deliveredEnergy": 0,
+            "importedEnergy": 0,
+            "exportedEnergy": 0,
+            "shortage": 0,
+            "tradeRevenue": 0,
+            "tradeSpend": 0,
+            "industrialRevenue": 0,
+            "emergencySpend": 0,
+            "buildSpend": 0,
+            "lastBuildFocus": "hold",
+            "lastBuildKind": "none",
+            "quotes": null
+          },
+          {
+            "id": "petroport",
+            "name": "Petroport",
+            "treasury": 155,
+            "treasuryDelta": 0,
+            "energyReserve": 16,
+            "demand": 23.55414012738854,
+            "generatedEnergy": 0,
+            "deliveredEnergy": 0,
+            "importedEnergy": 0,
+            "exportedEnergy": 0,
+            "shortage": 0,
+            "tradeRevenue": 0,
+            "tradeSpend": 0,
+            "industrialRevenue": 0,
+            "emergencySpend": 0,
+            "buildSpend": 0,
+            "lastBuildFocus": "hold",
+            "lastBuildKind": "none",
+            "quotes": null
+          },
+          {
+            "id": "silica",
+            "name": "Silica",
+            "treasury": 150,
+            "treasuryDelta": 0,
+            "energyReserve": 14,
+            "demand": 20.773626373626378,
+            "generatedEnergy": 0,
+            "deliveredEnergy": 0,
+            "importedEnergy": 0,
+            "exportedEnergy": 0,
+            "shortage": 0,
+            "tradeRevenue": 0,
+            "tradeSpend": 0,
+            "industrialRevenue": 0,
+            "emergencySpend": 0,
+            "buildSpend": 0,
+            "lastBuildFocus": "hold",
+            "lastBuildKind": "none",
+            "quotes": null
+          },
+          {
+            "id": "aurora",
+            "name": "Aurora",
+            "treasury": 145,
+            "treasuryDelta": 0,
+            "energyReserve": 15,
+            "demand": 20.342551293487958,
+            "generatedEnergy": 0,
+            "deliveredEnergy": 0,
+            "importedEnergy": 0,
+            "exportedEnergy": 0,
+            "shortage": 0,
+            "tradeRevenue": 0,
+            "tradeSpend": 0,
+            "industrialRevenue": 0,
+            "emergencySpend": 0,
+            "buildSpend": 0,
+            "lastBuildFocus": "hold",
+            "lastBuildKind": "none",
+            "quotes": null
+          }
+        ]
+      },
+      "events": [
+        "Run started at tick 0.",
+        "Decision mode: heuristic."
+      ]
+    }
+  ],
+  "summary": {
+    "tickCount": 1,
+    "currentTick": 0,
+    "livingCountries": 4,
+    "finalEnergyDelivered": 0,
+    "finalEnergyTraded": 0,
+    "finalCargoTraded": 0,
+    "finalShortage": 0,
+    "finalTreasury": 0
+  }
+}

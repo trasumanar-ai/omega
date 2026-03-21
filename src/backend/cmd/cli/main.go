@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"omega/server/internal/econ"
+	"omega/backend/internal/econ"
 )
 
 type tracePoint struct {

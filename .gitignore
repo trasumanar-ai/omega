@@ -13,7 +13,5 @@ dist-ssr/
 # Environment
 .env
 
-# Server runtime artifacts
-src/server/runs/
-src/server/lab-results/
-src/server/experiment-results/
+# Runtime output
+output/

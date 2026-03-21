@@ -1,6 +1,6 @@
 package main
 
-import "omega/server/internal/econ"
+import "omega/backend/internal/econ"
 
 type compareRequest struct {
 	Count      int                    `json:"count"`

@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"omega/server/internal/econ"
+	"omega/backend/internal/econ"
 )
 
 type stepRequest struct {
@@ -48,20 +48,20 @@ type serverState struct {
 	llmModel    string
 }
 
-func newServerState(cfg econ.Config, provider econ.DecisionProvider, llmMode string, llmModel string) (*serverState, error) {
+func newServerState(cfg econ.Config, provider econ.DecisionProvider, llmMode string, llmModel string, outputDir string) (*serverState, error) {
 	engine, err := econ.NewSimulation(cfg)
 	if err != nil {
 		return nil, err
 	}
-	recorder, err := newRunRecorder("runs")
+	recorder, err := newRunRecorder(outputDir + "/runs")
 	if err != nil {
 		return nil, err
 	}
-	archive, err := newLabArchiveStore("lab-results")
+	archive, err := newLabArchiveStore(outputDir + "/lab-results")
 	if err != nil {
 		return nil, err
 	}
-	experiments, err := newExperimentStore("experiment-results")
+	experiments, err := newExperimentStore(outputDir + "/experiment-results")
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +144,7 @@ func (s *serverState) responseLocked() stateResponse {
 
 func main() {
 	port := flag.Int("port", 8090, "HTTP port")
+	outputDir := flag.String("output-dir", "../../output", "directory for run and result files")
 	flag.Parse()
 
 	provider := econ.DecisionProvider(nil)
@@ -158,7 +159,7 @@ func main() {
 		log.Printf("OpenRouter disabled, falling back to heuristic decisions: %v", err)
 	}
 
-	state, err := newServerState(econ.DefaultConfig(), provider, llmMode, llmModel)
+	state, err := newServerState(econ.DefaultConfig(), provider, llmMode, llmModel, *outputDir)
 	if err != nil {
 		log.Fatalf("failed to initialize econ simulation: %v", err)
 	}

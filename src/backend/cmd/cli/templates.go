@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"omega/server/internal/econ"
+	"omega/backend/internal/econ"
 )
 
 type experimentTemplate struct {

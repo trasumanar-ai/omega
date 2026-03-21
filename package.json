@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "server": "cd src/server && go run ./cmd/serve -port 8090",
+    "server": "cd src/backend && go run ./cmd/serve -port 8090",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
