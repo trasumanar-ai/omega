@@ -2,16 +2,16 @@
 
 Repo is under active rewrite. Architecture, API shape, and product direction are intentionally unstable.
 
-## Run
+## Current Focus
+
+Simulation and CLI work. UI is parked under `src/frontend` and is not the primary surface right now.
+
+## Backend Run
 
 ```bash
-npm install
-npm run server
-npm run dev
+cd src/backend
+go run ./cmd/serve -port 8090
 ```
-
-- UI: `http://localhost:20000`
-- API: `http://localhost:8090`
 
 ## Optional LLM
 
@@ -19,6 +19,17 @@ npm run dev
 export OPENROUTER_API_KEY=...
 export ECON_LLM_MODEL=deepseek/deepseek-chat-v3-0324
 ```
+
+## Frontend
+
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
+
+- UI: `http://localhost:20000`
+- API proxy target: `http://localhost:8090`
 
 ## Current Rule
 
