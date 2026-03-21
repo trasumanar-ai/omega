@@ -1,9 +1,0 @@
-services:
-  app:
-    build: .
-    container_name: omega
-    restart: unless-stopped
-    ports:
-      - "20000:20000"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro

@@ -1,26 +1,19 @@
-__pycache__/
-*.pyc
-.env
-*.egg-info/
-.venv/
-*.whl
-
 # Node / Vite
 node_modules/
 dist/
 dist-ssr/
 *.local
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-.vscode/*
-!.vscode/extensions.json
+*.log
+
+# IDE
+.vscode/
 .idea/
 .DS_Store
 
-# Go sim runtime artifacts
-go-sim/runs/
-go-sim/lab-results/
-go-sim/experiment-results/
+# Environment
+.env
+
+# Server runtime artifacts
+src/server/runs/
+src/server/lab-results/
+src/server/experiment-results/
