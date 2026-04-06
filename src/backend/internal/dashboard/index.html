@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Omega Government Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; }
+a { color: #7c9cff; }
+
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 24px; background: #12121a; border-bottom: 1px solid #1e1e2e;
+}
+.header h1 { font-size: 18px; font-weight: 600; color: #fff; }
+.header select {
+  background: #1e1e2e; color: #e0e0e0; border: 1px solid #2e2e3e;
+  padding: 6px 12px; border-radius: 6px; font-size: 14px; cursor: pointer;
+}
+
+.controls {
+  display: flex; gap: 8px; align-items: center; padding: 12px 24px;
+  background: #0f0f17; border-bottom: 1px solid #1e1e2e;
+}
+.controls button {
+  background: #1e1e2e; color: #e0e0e0; border: 1px solid #2e2e3e;
+  padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer;
+}
+.controls button:hover { background: #2a2a3a; }
+.controls button.primary { background: #2a4494; border-color: #3a5ab4; }
+.controls button.primary:hover { background: #3a5ab4; }
+.controls .status { margin-left: auto; font-size: 12px; color: #666; }
+
+.main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+.cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.card {
+  background: #12121a; border: 1px solid #1e1e2e; border-radius: 10px;
+  padding: 16px 20px;
+}
+.card .label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.card .value { font-size: 28px; font-weight: 700; color: #fff; }
+.card .sub { font-size: 12px; color: #888; margin-top: 4px; }
+
+.section {
+  background: #12121a; border: 1px solid #1e1e2e; border-radius: 10px;
+  padding: 20px; margin-bottom: 24px;
+}
+.section h2 { font-size: 15px; font-weight: 600; color: #aaa; margin-bottom: 16px; }
+
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+.chart-box {
+  background: #12121a; border: 1px solid #1e1e2e; border-radius: 10px;
+  padding: 16px;
+}
+.chart-box h3 { font-size: 13px; color: #888; margin-bottom: 12px; }
+.chart-box canvas { width: 100% !important; height: 200px !important; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; color: #666; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #1e1e2e; }
+td { padding: 8px 12px; border-bottom: 1px solid #111118; }
+tr:hover td { background: #16161f; }
+.mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+.right { text-align: right; }
+.tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-weight: 500;
+}
+.tag-register { background: #1a3a2a; color: #4ade80; }
+.tag-transfer { background: #1a2a3a; color: #60a5fa; }
+.tag-create_contract { background: #2a1a3a; color: #c084fc; }
+.tag-sign_contract { background: #2a2a1a; color: #fbbf24; }
+.tag-create_firm { background: #1a2a2a; color: #2dd4bf; }
+.tag-ok { color: #4ade80; }
+.tag-error { color: #f87171; }
+
+.event-filters {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.event-filters input, .event-filters select {
+  background: #1a1a24; color: #e0e0e0; border: 1px solid #2e2e3e;
+  padding: 4px 10px; border-radius: 4px; font-size: 12px;
+}
+
+.empty { color: #444; text-align: center; padding: 40px; font-size: 14px; }
+.balance-bar {
+  height: 6px; border-radius: 3px; background: #1e1e2e; overflow: hidden;
+  margin-top: 4px;
+}
+.balance-bar .fill { height: 100%; border-radius: 3px; background: #3b82f6; }
+
+@media (max-width: 800px) {
+  .charts-grid { grid-template-columns: 1fr; }
+  .cards { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Omega Dashboard</h1>
+  <select id="gov-select"><option value="">Loading...</option></select>
+</div>
+
+<div class="controls">
+  <button class="primary" onclick="takeSnapshot()">Take Snapshot</button>
+  <button onclick="loadReport()">Refresh</button>
+  <label><input type="checkbox" id="auto-refresh" checked> Auto-refresh</label>
+  <span class="status" id="status"></span>
+</div>
+
+<div class="main">
+  <div class="cards" id="cards"></div>
+
+  <div class="charts-grid">
+    <div class="chart-box"><h3>Money Supply</h3><canvas id="chart-supply"></canvas></div>
+    <div class="chart-box"><h3>Gini Coefficient</h3><canvas id="chart-gini"></canvas></div>
+    <div class="chart-box"><h3>Citizens</h3><canvas id="chart-citizens"></canvas></div>
+    <div class="chart-box"><h3>Tx Volume (per snapshot)</h3><canvas id="chart-volume"></canvas></div>
+  </div>
+
+  <div class="section">
+    <h2>Citizens</h2>
+    <table id="citizens-table">
+      <thead>
+        <tr>
+          <th>Name</th><th>ID</th><th class="right">Balance</th>
+          <th class="right">Sent</th><th class="right">Received</th>
+          <th class="right">Contracts</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="citizens-body"></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Event Log</h2>
+    <div class="event-filters">
+      <select id="filter-action">
+        <option value="">All actions</option>
+        <option value="register">register</option>
+        <option value="transfer">transfer</option>
+        <option value="create_contract">create_contract</option>
+        <option value="sign_contract">sign_contract</option>
+        <option value="create_firm">create_firm</option>
+      </select>
+      <input id="filter-actor" placeholder="Filter by actor ID...">
+    </div>
+    <table>
+      <thead>
+        <tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th><th>Result</th></tr>
+      </thead>
+      <tbody id="events-body"></tbody>
+    </table>
+    <div id="events-empty" class="empty" style="display:none">No events yet</div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin + '/api';
+let currentGovID = '';
+let charts = {};
+let refreshTimer = null;
+let agentNames = {};
+
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  return res.json();
+}
+
+async function loadGovernments() {
+  const govs = await fetchJSON(`${API}/governments`);
+  const sel = document.getElementById('gov-select');
+  sel.innerHTML = '';
+  if (!govs || govs.length === 0) {
+    sel.innerHTML = '<option value="">No governments</option>';
+    return;
+  }
+  govs.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.id;
+    opt.textContent = g.name;
+    sel.appendChild(opt);
+  });
+  currentGovID = govs[0].id;
+  sel.value = currentGovID;
+  loadReport();
+}
+
+document.getElementById('gov-select').addEventListener('change', e => {
+  currentGovID = e.target.value;
+  loadReport();
+});
+
+document.getElementById('filter-action').addEventListener('change', renderEvents);
+document.getElementById('filter-actor').addEventListener('input', renderEvents);
+document.getElementById('auto-refresh').addEventListener('change', e => {
+  if (e.target.checked) startAutoRefresh();
+  else stopAutoRefresh();
+});
+
+let lastReport = null;
+
+async function loadReport() {
+  if (!currentGovID) return;
+  setStatus('Loading...');
+  try {
+    lastReport = await fetchJSON(`${API}/governments/${currentGovID}/report?events=1000`);
+    agentNames = {};
+    (lastReport.citizens || []).forEach(c => { agentNames[c.id] = c.name; });
+    renderCards();
+    renderCharts();
+    renderCitizens();
+    renderEvents();
+    setStatus(`Updated ${new Date().toLocaleTimeString()}`);
+  } catch (e) {
+    setStatus('Error: ' + e.message);
+  }
+}
+
+function renderCards() {
+  const r = lastReport;
+  if (!r) return;
+  const citizens = r.citizens || [];
+  const timeline = r.timeline || [];
+  const latest = timeline.length > 0 ? timeline[timeline.length - 1] : null;
+
+  const supply = latest ? latest.money_supply : citizens.reduce((s, c) => s + c.balance, 0);
+  const gini = latest ? latest.gini : 0;
+  const treasury = latest ? latest.treasury_balance : 0;
+  const txTotal = r.total_transactions || 0;
+
+  document.getElementById('cards').innerHTML = `
+    <div class="card">
+      <div class="label">Citizens</div>
+      <div class="value">${citizens.length}</div>
+      <div class="sub">${r.active_contracts || 0} active contracts</div>
+    </div>
+    <div class="card">
+      <div class="label">Money Supply</div>
+      <div class="value">${fmt(supply)}</div>
+      <div class="sub">Treasury: ${fmt(treasury)}</div>
+    </div>
+    <div class="card">
+      <div class="label">Gini Coefficient</div>
+      <div class="value">${gini.toFixed(3)}</div>
+      <div class="sub">${giniLabel(gini)}</div>
+    </div>
+    <div class="card">
+      <div class="label">Transactions</div>
+      <div class="value">${txTotal}</div>
+      <div class="sub">${r.duration || 'just started'}</div>
+    </div>
+  `;
+}
+
+function renderCharts() {
+  const timeline = lastReport?.timeline || [];
+  if (timeline.length === 0) return;
+
+  const labels = timeline.map((s, i) => `#${i + 1}`);
+
+  updateChart('chart-supply', labels, timeline.map(s => s.money_supply), '#3b82f6', 'Money Supply');
+  updateChart('chart-gini', labels, timeline.map(s => s.gini), '#f59e0b', 'Gini');
+  updateChart('chart-citizens', labels, timeline.map(s => s.citizen_count), '#10b981', 'Citizens');
+  updateChart('chart-volume', labels, timeline.map(s => s.tx_volume), '#8b5cf6', 'Volume');
+}
+
+function updateChart(canvasId, labels, data, color, label) {
+  if (charts[canvasId]) {
+    charts[canvasId].data.labels = labels;
+    charts[canvasId].data.datasets[0].data = data;
+    charts[canvasId].update('none');
+    return;
+  }
+
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  charts[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label,
+        data,
+        borderColor: color,
+        backgroundColor: color + '20',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: color,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1e1e2e' }, ticks: { color: '#555', font: { size: 11 } } },
+        y: { grid: { color: '#1e1e2e' }, ticks: { color: '#555', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function renderCitizens() {
+  const citizens = lastReport?.citizens || [];
+  const tbody = document.getElementById('citizens-body');
+  if (citizens.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No citizens</td></tr>';
+    return;
+  }
+
+  const maxBal = Math.max(...citizens.map(c => c.balance));
+
+  tbody.innerHTML = citizens.map(c => `
+    <tr>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td class="mono">${c.id.slice(0, 8)}...</td>
+      <td class="right">${fmt(c.balance)}</td>
+      <td class="right">${c.tx_sent} <span style="color:#666">(${fmt(c.volume_sent)})</span></td>
+      <td class="right">${c.tx_received} <span style="color:#666">(${fmt(c.volume_received)})</span></td>
+      <td class="right">${c.contracts}</td>
+      <td style="width:100px">
+        <div class="balance-bar"><div class="fill" style="width:${maxBal > 0 ? (c.balance/maxBal*100) : 0}%"></div></div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+let allEvents = [];
+
+function renderEvents() {
+  const events = lastReport?.events || [];
+  allEvents = events;
+
+  const actionFilter = document.getElementById('filter-action').value;
+  const actorFilter = document.getElementById('filter-actor').value.toLowerCase();
+
+  const filtered = events.filter(e => {
+    if (actionFilter && e.action !== actionFilter) return false;
+    if (actorFilter && !e.actor.toLowerCase().includes(actorFilter) &&
+        !(agentNames[e.actor] || '').toLowerCase().includes(actorFilter)) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('events-body');
+  const empty = document.getElementById('events-empty');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.slice(0, 200).map(e => {
+    let details = '';
+    try {
+      const d = JSON.parse(e.details);
+      details = Object.entries(d).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`).join(', ');
+    } catch { details = e.details; }
+
+    return `<tr>
+      <td class="mono">${fmtTime(e.timestamp)}</td>
+      <td>${agentNames[e.actor] || e.actor.slice(0, 8)}</td>
+      <td><span class="tag tag-${e.action}">${e.action}</span></td>
+      <td class="mono">${e.target ? (agentNames[e.target] || e.target.slice(0, 8)) : '-'}</td>
+      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(details)}">${esc(details)}</td>
+      <td class="${e.result === 'ok' ? 'tag-ok' : 'tag-error'}">${e.result}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function takeSnapshot() {
+  if (!currentGovID) return;
+  await fetch(`${API}/governments/${currentGovID}/snapshot`, { method: 'POST' });
+  loadReport();
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshTimer = setInterval(loadReport, 10000);
+}
+
+function stopAutoRefresh() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+}
+
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+function fmt(n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
+function fmtTime(ts) { return ts ? ts.replace('T', ' ').replace('Z', '').slice(11, 19) : ''; }
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function giniLabel(g) {
+  if (g < 0.2) return 'Very equal';
+  if (g < 0.3) return 'Relatively equal';
+  if (g < 0.4) return 'Moderate inequality';
+  if (g < 0.5) return 'High inequality';
+  return 'Extreme inequality';
+}
+
+loadGovernments();
+startAutoRefresh();
+</script>
+</body>
+</html>

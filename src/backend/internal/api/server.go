@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"omega/backend/internal/bank"
 	"omega/backend/internal/contracts"
+	"omega/backend/internal/dashboard"
 	"omega/backend/internal/government"
 	"omega/backend/internal/observer"
 	"omega/backend/internal/registry"
@@ -48,6 +49,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) routes() {
+	// Dashboard
+	s.mux.HandleFunc("GET /", dashboard.Handler())
+	s.mux.HandleFunc("GET /dashboard", dashboard.Handler())
+
 	// Health
 	s.mux.HandleFunc("GET /api/health", s.handleHealth)
 
