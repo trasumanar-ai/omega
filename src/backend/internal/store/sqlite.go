@@ -42,14 +42,14 @@ CREATE TABLE IF NOT EXISTS agents (
 	id              TEXT PRIMARY KEY,
 	government_id   TEXT NOT NULL REFERENCES governments(id),
 	name            TEXT NOT NULL,
-	api_key         TEXT NOT NULL UNIQUE,
+	public_key      TEXT NOT NULL UNIQUE,
 	soul_hash       TEXT NOT NULL DEFAULT '',
 	model           TEXT NOT NULL DEFAULT '',
 	referred_by     TEXT DEFAULT NULL REFERENCES agents(id),
 	created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_agents_gov ON agents(government_id);
-CREATE INDEX IF NOT EXISTS idx_agents_api_key ON agents(api_key);
+CREATE INDEX IF NOT EXISTS idx_agents_pubkey ON agents(public_key);
 
 CREATE TABLE IF NOT EXISTS firms (
 	id              TEXT PRIMARY KEY,

@@ -11,7 +11,6 @@ import (
 	"omega/backend/internal/registry"
 	"omega/backend/internal/store"
 	"strconv"
-	"strings"
 )
 
 type Server struct {
@@ -92,19 +91,17 @@ type authedHandler func(w http.ResponseWriter, r *http.Request, agent *registry.
 func (s *Server) withAuth(h authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
-		if !strings.HasPrefix(auth, "Bearer ") {
+		if auth == "" {
 			writeErr(w, http.StatusUnauthorized, "missing authorization")
 			return
 		}
-		key := strings.TrimPrefix(auth, "Bearer ")
 
-		agent, err := s.registry.Authenticate(key)
+		agent, err := s.registry.Authenticate(auth, r.Method, r.URL.Path)
 		if err != nil {
-			writeErr(w, http.StatusUnauthorized, "invalid api key")
+			writeErr(w, http.StatusUnauthorized, err.Error())
 			return
 		}
 
-		// Verify agent belongs to this government
 		govID := r.PathValue("id")
 		if agent.GovID != govID {
 			writeErr(w, http.StatusForbidden, "agent not in this government")
@@ -195,20 +192,37 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var req registry.RegisterInput
+	var req struct {
+		Name      string `json:"name"`
+		PublicKey string `json:"public_key"`
+		SoulMD    string `json:"soul_md"`
+		Model     string `json:"model"`
+		ReferredBy string `json:"referred_by"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErr(w, 400, "invalid json")
 		return
 	}
-	req.GovID = govID
+	if req.PublicKey == "" {
+		writeErr(w, 400, "public_key required (Ed25519, hex encoded)")
+		return
+	}
 
-	agent, err := s.registry.Register(req)
+	input := registry.RegisterInput{
+		GovID:     govID,
+		Name:      req.Name,
+		PublicKey:  req.PublicKey,
+		SoulMD:    req.SoulMD,
+		Model:     req.Model,
+		ReferredBy: req.ReferredBy,
+	}
+
+	agent, err := s.registry.Register(input)
 	if err != nil {
 		writeErr(w, 400, err.Error())
 		return
 	}
 
-	// Create bank account with initial balance
 	_, err = s.bank.CreateAccount(govID, agent.ID, gov.Config.InitialBalance)
 	if err != nil {
 		writeErr(w, 500, "failed to create bank account: "+err.Error())
@@ -217,7 +231,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	s.observer.LogEvent(govID, agent.ID, "register", "", map[string]any{
 		"name": agent.Name, "model": req.Model, "initial_balance": gov.Config.InitialBalance,
-		"referred_by": req.ReferredBy,
+		"public_key": req.PublicKey[:16] + "...",
 	}, "ok")
 
 	writeJSON(w, 201, agent)

@@ -3,12 +3,16 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/ed25519"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -48,18 +52,13 @@ func main() {
 	apiKey := flag.String("api-key", "", "OpenRouter API key")
 	model := flag.String("model", "minimax/minimax-m2.7", "LLM model")
 	govURL := flag.String("gov-url", "http://localhost:8090", "government API URL")
-	agentKey := flag.String("agent-key", "", "agent API key (from .env)")
-	govID := flag.String("gov-id", "", "government ID (from .env)")
+	govID := flag.String("gov-id", "", "government ID")
 	flag.Parse()
 
-	// Load .env first, then resolve all values
+	// Load .env
 	loadDotEnv(*agentDir)
-
 	if *apiKey == "" {
 		*apiKey = os.Getenv("OPENROUTER_API_KEY")
-	}
-	if *agentKey == "" {
-		*agentKey = os.Getenv("OMEGA_API_KEY")
 	}
 	if *govID == "" {
 		*govID = os.Getenv("OMEGA_GOV_ID")
@@ -69,31 +68,34 @@ func main() {
 		fmt.Fprintln(os.Stderr, "error: set OPENROUTER_API_KEY or use -api-key")
 		os.Exit(1)
 	}
-	if *agentKey == "" || *govID == "" {
-		fmt.Fprintln(os.Stderr, "error: set -agent-key and -gov-id, or have .env with PRESIDENT_API_KEY and OMEGA_GOV_ID")
+	if *govID == "" {
+		fmt.Fprintln(os.Stderr, "error: set -gov-id or OMEGA_GOV_ID in .env")
 		os.Exit(1)
 	}
+
+	// Load or generate key pair
+	keyDir := filepath.Join(*agentDir, "keys")
+	privKey, pubHex := loadOrGenerateKeys(keyDir)
+
+	// Register if needed
+	agentID := ensureRegistered(*govURL, *govID, *agentDir, pubHex)
 
 	// Load persona
 	soul := readFile(*agentDir + "/SOUL.md")
 	agents := readFile(*agentDir + "/AGENTS.md")
 	identity := readFile(*agentDir + "/IDENTITY.md")
+	systemPrompt := buildSystemPrompt(soul, agents, identity, *govID, agentID)
 
-	systemPrompt := buildSystemPrompt(soul, agents, identity, *govID)
-
-	// Build tool executor
-	exec := &toolExecutor{govURL: *govURL, govID: *govID, apiKey: *agentKey}
-
+	exec := &toolExecutor{govURL: *govURL, govID: *govID, privKey: privKey, pubHex: pubHex}
 	history := []message{{Role: "system", Content: systemPrompt}}
 
-	// Print agent info
 	name := "Agent"
 	for _, line := range strings.Split(identity, "\n") {
 		if strings.HasPrefix(line, "name:") {
 			name = strings.TrimSpace(strings.TrimPrefix(line, "name:"))
 		}
 	}
-	fmt.Printf("\033[1m%s\033[0m is ready. Type your message. (ctrl+d to quit)\n\n", name)
+	fmt.Printf("\033[1m%s\033[0m is ready. (id: %s)\nType your message. ctrl+d to quit.\n\n", name, agentID[:12])
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -108,7 +110,6 @@ func main() {
 
 		history = append(history, message{Role: "user", Content: input})
 
-		// Tool loop: keep calling LLM until it responds without tool calls
 		for {
 			resp, err := callLLM(*apiKey, *model, history, govTools())
 			if err != nil {
@@ -117,7 +118,6 @@ func main() {
 			}
 
 			if len(resp.ToolCalls) > 0 {
-				// Show tool usage
 				history = append(history, *resp)
 				for _, tc := range resp.ToolCalls {
 					fmt.Printf("\033[33m  [%s]\033[0m", tc.Function.Name)
@@ -130,10 +130,9 @@ func main() {
 						Content:    result,
 					})
 				}
-				continue // let LLM process tool results
+				continue
 			}
 
-			// Final text response
 			if resp.Content != "" {
 				fmt.Printf("\n\033[1m%s:\033[0m %s\n\n", name, resp.Content)
 			}
@@ -144,7 +143,110 @@ func main() {
 	fmt.Println()
 }
 
-func buildSystemPrompt(soul, agents, identity, govID string) string {
+// --- Key management ---
+
+func loadOrGenerateKeys(dir string) (ed25519.PrivateKey, string) {
+	privPath := filepath.Join(dir, "omega.key")
+	pubPath := filepath.Join(dir, "omega.pub")
+
+	// Try loading existing keys
+	if privData, err := os.ReadFile(privPath); err == nil {
+		if pubData, err := os.ReadFile(pubPath); err == nil {
+			privBytes, _ := hex.DecodeString(strings.TrimSpace(string(privData)))
+			pubHex := strings.TrimSpace(string(pubData))
+			if len(privBytes) == ed25519.PrivateKeySize {
+				return ed25519.PrivateKey(privBytes), pubHex
+			}
+		}
+	}
+
+	// Generate new key pair
+	os.MkdirAll(dir, 0700)
+	pub, priv, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error generating keys: %v\n", err)
+		os.Exit(1)
+	}
+
+	os.WriteFile(privPath, []byte(hex.EncodeToString(priv)), 0600)
+	pubHex := hex.EncodeToString(pub)
+	os.WriteFile(pubPath, []byte(pubHex), 0644)
+
+	fmt.Printf("Generated key pair in %s/\n", dir)
+	return priv, pubHex
+}
+
+func ensureRegistered(govURL, govID, agentDir, pubHex string) string {
+	// Check if already registered
+	resp, err := http.Get(fmt.Sprintf("%s/api/governments/%s/registry/agents", govURL, govID))
+	if err == nil {
+		defer resp.Body.Close()
+		var agents []struct {
+			ID        string `json:"id"`
+			PublicKey string `json:"public_key"`
+		}
+		json.NewDecoder(resp.Body).Decode(&agents)
+		for _, a := range agents {
+			if a.PublicKey == pubHex {
+				return a.ID
+			}
+		}
+	}
+
+	// Not registered — register now
+	identity := readFile(agentDir + "/IDENTITY.md")
+	name := "Agent"
+	for _, line := range strings.Split(identity, "\n") {
+		if strings.HasPrefix(line, "name:") {
+			name = strings.TrimSpace(strings.TrimPrefix(line, "name:"))
+		}
+	}
+
+	soul := readFile(agentDir + "/SOUL.md")
+	body, _ := json.Marshal(map[string]string{
+		"name":       name,
+		"public_key": pubHex,
+		"soul_md":    soul,
+		"model":      "minimax/minimax-m2.7",
+	})
+
+	regResp, err := http.Post(
+		fmt.Sprintf("%s/api/governments/%s/registry/register", govURL, govID),
+		"application/json",
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error registering: %v\n", err)
+		os.Exit(1)
+	}
+	defer regResp.Body.Close()
+
+	var result struct {
+		ID    string `json:"id"`
+		Error string `json:"error"`
+	}
+	json.NewDecoder(regResp.Body).Decode(&result)
+	if result.Error != "" {
+		fmt.Fprintf(os.Stderr, "registration error: %s\n", result.Error)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Registered as %s (id: %s)\n", name, result.ID)
+	return result.ID
+}
+
+// --- Auth ---
+
+func signRequest(privKey ed25519.PrivateKey, pubHex, method, path string) string {
+	ts := strconv.FormatInt(time.Now().Unix(), 10)
+	message := ts + ":" + strings.ToUpper(method) + ":" + path
+	sig := ed25519.Sign(privKey, []byte(message))
+	return fmt.Sprintf("Signed %s:%s:%s", pubHex, ts, hex.EncodeToString(sig))
+}
+
+// --- System prompt ---
+
+func buildSystemPrompt(soul, agents, identity, govID, agentID string) string {
 	var b strings.Builder
 	if soul != "" {
 		b.WriteString(soul)
@@ -155,12 +257,15 @@ func buildSystemPrompt(soul, agents, identity, govID string) string {
 		b.WriteString("\n\n")
 	}
 	b.WriteString("# Context\n\n")
-	b.WriteString(fmt.Sprintf("You are in a live conversation. Your government ID is %s.\n", govID))
+	b.WriteString(fmt.Sprintf("Your agent ID is: %s\n", agentID))
+	b.WriteString(fmt.Sprintf("Your government ID is: %s\n", govID))
 	b.WriteString("You have tools to interact with the government API. Use them to check state before making decisions.\n")
-	b.WriteString("Keep responses conversational and concise. You are speaking directly to a citizen or advisor.\n")
+	b.WriteString("Keep responses conversational and concise.\n")
 	b.WriteString(fmt.Sprintf("Current time: %s\n", time.Now().Format("2006-01-02 15:04")))
 	return b.String()
 }
+
+// --- Tools ---
 
 func govTools() []tool {
 	return []tool{
@@ -208,9 +313,10 @@ func mkTool(name, desc string, params any) tool {
 // --- Tool executor ---
 
 type toolExecutor struct {
-	govURL string
-	govID  string
-	apiKey string
+	govURL  string
+	govID   string
+	privKey ed25519.PrivateKey
+	pubHex  string
 }
 
 func (e *toolExecutor) execute(name, argsJSON string) string {
@@ -219,68 +325,63 @@ func (e *toolExecutor) execute(name, argsJSON string) string {
 
 	switch name {
 	case "check_balance":
-		return e.get("/bank/balance")
+		return e.authedGet("/bank/balance")
 	case "list_citizens":
-		return e.getPublic("/registry/agents")
+		return e.publicGet("/registry/agents")
 	case "economic_stats":
-		return e.getPublic("/bank/supply")
+		return e.publicGet("/bank/supply")
 	case "view_ledger":
-		return e.getPublic("/bank/ledger")
+		return e.publicGet("/bank/ledger")
 	case "transfer_money":
-		return e.post("/bank/transfer", args)
+		return e.authedPost("/bank/transfer", args)
 	case "list_contracts":
-		return e.get("/contracts")
+		return e.authedGet("/contracts")
 	case "create_contract":
 		body := map[string]any{
 			"type":    "payment",
 			"my_role": "payer",
-			"terms": map[string]any{
-				"amount":      args["amount"],
-				"description": args["description"],
-			},
-			"parties": []map[string]any{
-				{"agent_id": args["payee_id"], "role": "payee"},
-			},
+			"terms":   map[string]any{"amount": args["amount"], "description": args["description"]},
+			"parties": []map[string]any{{"agent_id": args["payee_id"], "role": "payee"}},
 		}
-		return e.post("/contracts", body)
+		return e.authedPost("/contracts", body)
 	case "list_firms":
-		return e.getPublic("/registry/firms")
+		return e.publicGet("/registry/firms")
 	case "create_firm":
-		return e.post("/registry/firms", args)
+		return e.authedPost("/registry/firms", args)
 	case "get_government_info":
-		return e.getNoAuth(fmt.Sprintf("%s/api/governments/%s", e.govURL, e.govID))
+		return e.rawGet(fmt.Sprintf("%s/api/governments/%s", e.govURL, e.govID))
 	default:
 		return `{"error":"unknown tool"}`
 	}
 }
 
-func (e *toolExecutor) get(path string) string {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/governments/%s%s", e.govURL, e.govID, path), nil)
-	req.Header.Set("Authorization", "Bearer "+e.apiKey)
+func (e *toolExecutor) authedGet(path string) string {
+	fullPath := fmt.Sprintf("/api/governments/%s%s", e.govID, path)
+	req, _ := http.NewRequest("GET", e.govURL+fullPath, nil)
+	req.Header.Set("Authorization", signRequest(e.privKey, e.pubHex, "GET", fullPath))
 	return doHTTP(req)
 }
 
-func (e *toolExecutor) getPublic(path string) string {
-	req, _ := http.NewRequest("GET", fmt.Sprintf("%s/api/governments/%s%s", e.govURL, e.govID, path), nil)
-	return doHTTP(req)
-}
-
-func (e *toolExecutor) getNoAuth(url string) string {
-	req, _ := http.NewRequest("GET", url, nil)
-	return doHTTP(req)
-}
-
-func (e *toolExecutor) post(path string, body any) string {
+func (e *toolExecutor) authedPost(path string, body any) string {
+	fullPath := fmt.Sprintf("/api/governments/%s%s", e.govID, path)
 	data, _ := json.Marshal(body)
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/governments/%s%s", e.govURL, e.govID, path), bytes.NewReader(data))
-	req.Header.Set("Authorization", "Bearer "+e.apiKey)
+	req, _ := http.NewRequest("POST", e.govURL+fullPath, bytes.NewReader(data))
+	req.Header.Set("Authorization", signRequest(e.privKey, e.pubHex, "POST", fullPath))
 	req.Header.Set("Content-Type", "application/json")
 	return doHTTP(req)
 }
 
+func (e *toolExecutor) publicGet(path string) string {
+	return e.rawGet(fmt.Sprintf("%s/api/governments/%s%s", e.govURL, e.govID, path))
+}
+
+func (e *toolExecutor) rawGet(url string) string {
+	req, _ := http.NewRequest("GET", url, nil)
+	return doHTTP(req)
+}
+
 func doHTTP(req *http.Request) string {
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(req)
 	if err != nil {
 		return fmt.Sprintf(`{"error":"%s"}`, err.Error())
 	}
@@ -292,67 +393,49 @@ func doHTTP(req *http.Request) string {
 // --- LLM ---
 
 func callLLM(apiKey, model string, messages []message, tools []tool) (*message, error) {
-	body := map[string]any{
-		"model":    model,
-		"messages": messages,
-		"tools":    tools,
-	}
-	data, _ := json.Marshal(body)
-
+	data, _ := json.Marshal(map[string]any{"model": model, "messages": messages, "tools": tools})
 	req, _ := http.NewRequest("POST", "https://openrouter.ai/api/v1/chat/completions", bytes.NewReader(data))
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("HTTP-Referer", "https://omega.gov")
 	req.Header.Set("X-Title", "Omega Government")
 
-	client := &http.Client{Timeout: 120 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := (&http.Client{Timeout: 120 * time.Second}).Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
-
-	respBody, _ := io.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(respBody))
+		return nil, fmt.Errorf("API %d: %s", resp.StatusCode, string(body))
 	}
 
 	var result struct {
-		Choices []struct {
-			Message message `json:"message"`
-		} `json:"choices"`
-		Error *struct {
-			Message string `json:"message"`
-		} `json:"error"`
+		Choices []struct{ Message message `json:"message"` } `json:"choices"`
+		Error   *struct{ Message string `json:"message"` }  `json:"error"`
 	}
-	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, fmt.Errorf("parse error: %w", err)
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
 	}
 	if result.Error != nil {
-		return nil, fmt.Errorf("API error: %s", result.Error.Message)
+		return nil, fmt.Errorf("%s", result.Error.Message)
 	}
 	if len(result.Choices) == 0 {
-		return nil, fmt.Errorf("no choices in response")
+		return nil, fmt.Errorf("no response")
 	}
-
 	return &result.Choices[0].Message, nil
 }
 
 // --- Helpers ---
 
 func readFile(path string) string {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
+	data, _ := os.ReadFile(path)
 	return string(data)
 }
 
 func loadDotEnv(agentDir string) {
-	// Try .env in current dir, then relative to agent dir
-	paths := []string{".env", agentDir + "/../../.env"}
-	for _, p := range paths {
+	for _, p := range []string{".env", agentDir + "/../../.env"} {
 		data, err := os.ReadFile(p)
 		if err != nil {
 			continue
@@ -367,24 +450,6 @@ func loadDotEnv(agentDir string) {
 			}
 		}
 		break
-	}
-
-	// Map agent-specific key based on agent dir name
-	dir := strings.ToLower(agentDir)
-	keyMap := map[string]string{
-		"president": "PRESIDENT_API_KEY",
-		"senator-1": "SENATOR1_API_KEY",
-		"senator-2": "SENATOR2_API_KEY",
-		"senator-3": "SENATOR3_API_KEY",
-		"fed-chair": "FEDCHAIR_API_KEY",
-	}
-	for pattern, envKey := range keyMap {
-		if strings.Contains(dir, pattern) {
-			if v := os.Getenv(envKey); v != "" {
-				os.Setenv("OMEGA_API_KEY", v)
-			}
-			break
-		}
 	}
 }
 

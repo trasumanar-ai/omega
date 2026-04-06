@@ -6,6 +6,16 @@
 # Environment
 .env
 
+# Agent keys (private!)
+agents/*/keys/
+omega.key
+omega.pub
+
+# Binaries
+/src/backend/chat
+/src/backend/identity
+/src/backend/serve
+
 # SQLite
 *.db
 *.db-shm

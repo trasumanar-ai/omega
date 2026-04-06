@@ -1,11 +1,16 @@
 package registry
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"omega/backend/internal/store"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type Registry struct {
@@ -19,47 +24,53 @@ func New(db *store.DB) *Registry {
 func (r *Registry) Name() string { return "registry" }
 
 type Agent struct {
-	ID         string `json:"id"`
-	GovID      string `json:"government_id"`
-	Name       string `json:"name"`
-	APIKey     string `json:"api_key,omitempty"` // only returned on registration
-	SoulHash   string `json:"soul_hash"`
-	Model      string `json:"model"`
+	ID        string `json:"id"`
+	GovID     string `json:"government_id"`
+	Name      string `json:"name"`
+	PublicKey string `json:"public_key"`
+	SoulHash  string `json:"soul_hash"`
+	Model     string `json:"model"`
 	ReferredBy string `json:"referred_by,omitempty"`
-	CreatedAt  string `json:"created_at"`
+	CreatedAt string `json:"created_at"`
 }
 
 type RegisterInput struct {
-	GovID      string `json:"government_id"`
-	Name       string `json:"name"`
-	SoulMD     string `json:"soul_md"`    // raw soul.md content — we hash it
-	Model      string `json:"model"`
-	ReferredBy string `json:"referred_by"` // optional agent ID
+	GovID     string `json:"government_id"`
+	Name      string `json:"name"`
+	PublicKey string `json:"public_key"` // Ed25519 public key, hex encoded
+	SoulMD    string `json:"soul_md"`
+	Model     string `json:"model"`
+	ReferredBy string `json:"referred_by"`
 }
 
-// Register creates a new agent identity in a government.
-// Returns the agent with API key (only time the key is returned in full).
+// Register creates a new agent identity using their public key.
 func (r *Registry) Register(input RegisterInput) (*Agent, error) {
-	id, err := genID()
-	if err != nil {
-		return nil, err
+	// Validate public key format
+	pubBytes, err := hex.DecodeString(input.PublicKey)
+	if err != nil || len(pubBytes) != ed25519.PublicKeySize {
+		return nil, fmt.Errorf("invalid public key: must be %d-byte Ed25519 key, hex encoded", ed25519.PublicKeySize)
 	}
-	apiKey, err := genAPIKey()
+
+	// Check for duplicate public key
+	var exists int
+	r.db.QueryRow(`SELECT COUNT(*) FROM agents WHERE public_key = ?`, input.PublicKey).Scan(&exists)
+	if exists > 0 {
+		return nil, fmt.Errorf("public key already registered")
+	}
+
+	id, err := genID()
 	if err != nil {
 		return nil, err
 	}
 
 	soulHash := hashSoul(input.SoulMD)
 
-	// Validate referrer exists if provided
 	if input.ReferredBy != "" {
-		var exists int
-		err := r.db.QueryRow(
-			`SELECT COUNT(*) FROM agents WHERE id = ? AND government_id = ?`,
-			input.ReferredBy, input.GovID,
-		).Scan(&exists)
-		if err != nil || exists == 0 {
-			return nil, fmt.Errorf("referrer %s not found in this government", input.ReferredBy)
+		var refExists int
+		r.db.QueryRow(`SELECT COUNT(*) FROM agents WHERE id = ? AND government_id = ?`,
+			input.ReferredBy, input.GovID).Scan(&refExists)
+		if refExists == 0 {
+			return nil, fmt.Errorf("referrer %s not found", input.ReferredBy)
 		}
 	}
 
@@ -69,55 +80,95 @@ func (r *Registry) Register(input RegisterInput) (*Agent, error) {
 	}
 
 	_, err = r.db.Exec(
-		`INSERT INTO agents (id, government_id, name, api_key, soul_hash, model, referred_by)
+		`INSERT INTO agents (id, government_id, name, public_key, soul_hash, model, referred_by)
 		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		id, input.GovID, input.Name, apiKey, soulHash, input.Model, refBy,
+		id, input.GovID, input.Name, input.PublicKey, soulHash, input.Model, refBy,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("insert agent: %w", err)
+		return nil, fmt.Errorf("register agent: %w", err)
 	}
 
 	return &Agent{
-		ID:         id,
-		GovID:      input.GovID,
-		Name:       input.Name,
-		APIKey:     apiKey,
-		SoulHash:   soulHash,
-		Model:      input.Model,
+		ID:        id,
+		GovID:     input.GovID,
+		Name:      input.Name,
+		PublicKey:  input.PublicKey,
+		SoulHash:  soulHash,
+		Model:     input.Model,
 		ReferredBy: input.ReferredBy,
 	}, nil
 }
 
-// Authenticate returns the agent for a given API key, or error.
-func (r *Registry) Authenticate(apiKey string) (*Agent, error) {
-	var a Agent
-	err := r.db.QueryRow(
-		`SELECT id, government_id, name, soul_hash, model, COALESCE(referred_by, ''), created_at
-		 FROM agents WHERE api_key = ?`, apiKey,
-	).Scan(&a.ID, &a.GovID, &a.Name, &a.SoulHash, &a.Model, &a.ReferredBy, &a.CreatedAt)
-	if err != nil {
-		return nil, fmt.Errorf("invalid api key")
+// Authenticate verifies a signed request.
+// authHeader format: "Signed <pubkey>:<timestamp>:<signature>"
+// The signed message is: "<timestamp>:<METHOD>:<path>"
+func (r *Registry) Authenticate(authHeader, method, path string) (*Agent, error) {
+	if !strings.HasPrefix(authHeader, "Signed ") {
+		return nil, fmt.Errorf("invalid auth: expected 'Signed <pubkey>:<ts>:<sig>'")
 	}
+
+	parts := strings.SplitN(strings.TrimPrefix(authHeader, "Signed "), ":", 3)
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid auth format")
+	}
+
+	pubHex, tsStr, sigHex := parts[0], parts[1], parts[2]
+
+	// Verify timestamp (allow 5 minute window)
+	ts, err := strconv.ParseInt(tsStr, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid timestamp")
+	}
+	if math.Abs(float64(time.Now().Unix()-ts)) > 300 {
+		return nil, fmt.Errorf("request expired (timestamp too old or too far in future)")
+	}
+
+	// Verify signature
+	pubBytes, err := hex.DecodeString(pubHex)
+	if err != nil || len(pubBytes) != ed25519.PublicKeySize {
+		return nil, fmt.Errorf("invalid public key")
+	}
+
+	sigBytes, err := hex.DecodeString(sigHex)
+	if err != nil {
+		return nil, fmt.Errorf("invalid signature")
+	}
+
+	message := tsStr + ":" + strings.ToUpper(method) + ":" + path
+	if !ed25519.Verify(ed25519.PublicKey(pubBytes), []byte(message), sigBytes) {
+		return nil, fmt.Errorf("signature verification failed")
+	}
+
+	// Look up agent by public key
+	var a Agent
+	err = r.db.QueryRow(
+		`SELECT id, government_id, name, public_key, soul_hash, model, COALESCE(referred_by, ''), created_at
+		 FROM agents WHERE public_key = ?`, pubHex,
+	).Scan(&a.ID, &a.GovID, &a.Name, &a.PublicKey, &a.SoulHash, &a.Model, &a.ReferredBy, &a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("unknown public key")
+	}
+
 	return &a, nil
 }
 
-// Get returns an agent by ID (public info, no API key).
+// Get returns an agent by ID (public info).
 func (r *Registry) Get(govID, agentID string) (*Agent, error) {
 	var a Agent
 	err := r.db.QueryRow(
-		`SELECT id, government_id, name, soul_hash, model, COALESCE(referred_by, ''), created_at
+		`SELECT id, government_id, name, public_key, soul_hash, model, COALESCE(referred_by, ''), created_at
 		 FROM agents WHERE id = ? AND government_id = ?`, agentID, govID,
-	).Scan(&a.ID, &a.GovID, &a.Name, &a.SoulHash, &a.Model, &a.ReferredBy, &a.CreatedAt)
+	).Scan(&a.ID, &a.GovID, &a.Name, &a.PublicKey, &a.SoulHash, &a.Model, &a.ReferredBy, &a.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("agent %s not found", agentID)
 	}
 	return &a, nil
 }
 
-// List returns all agents in a government (public info).
+// List returns all agents in a government.
 func (r *Registry) List(govID string) ([]Agent, error) {
 	rows, err := r.db.Query(
-		`SELECT id, government_id, name, soul_hash, model, COALESCE(referred_by, ''), created_at
+		`SELECT id, government_id, name, public_key, soul_hash, model, COALESCE(referred_by, ''), created_at
 		 FROM agents WHERE government_id = ? ORDER BY created_at`, govID,
 	)
 	if err != nil {
@@ -128,7 +179,7 @@ func (r *Registry) List(govID string) ([]Agent, error) {
 	var agents []Agent
 	for rows.Next() {
 		var a Agent
-		if err := rows.Scan(&a.ID, &a.GovID, &a.Name, &a.SoulHash, &a.Model, &a.ReferredBy, &a.CreatedAt); err != nil {
+		if err := rows.Scan(&a.ID, &a.GovID, &a.Name, &a.PublicKey, &a.SoulHash, &a.Model, &a.ReferredBy, &a.CreatedAt); err != nil {
 			return nil, err
 		}
 		agents = append(agents, a)
@@ -136,7 +187,6 @@ func (r *Registry) List(govID string) ([]Agent, error) {
 	return agents, rows.Err()
 }
 
-// CountByGov returns citizen count for a government.
 func (r *Registry) CountByGov(govID string) (int, error) {
 	var n int
 	err := r.db.QueryRow(`SELECT COUNT(*) FROM agents WHERE government_id = ?`, govID).Scan(&n)
@@ -154,12 +204,4 @@ func genID() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
-}
-
-func genAPIKey() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return "ogov_" + hex.EncodeToString(b), nil
 }
