@@ -1,0 +1,86 @@
+services:
+  omega:
+    build:
+      context: ./src/backend
+    ports:
+      - "8090:8090"
+    volumes:
+      - omega-data:/data
+
+  president:
+    image: ghcr.io/openclaw/openclaw:latest
+    volumes:
+      - ./agents/president:/home/node/.openclaw/workspace
+      - ./agents/shared/skills:/home/node/.openclaw/skills
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OMEGA_URL=http://omega:8090
+      - OMEGA_GOV_ID=${OMEGA_GOV_ID}
+      - OMEGA_API_KEY=${PRESIDENT_API_KEY}
+    ports:
+      - "18790:18789"
+    depends_on:
+      - omega
+
+  senator-1:
+    image: ghcr.io/openclaw/openclaw:latest
+    volumes:
+      - ./agents/senator-1:/home/node/.openclaw/workspace
+      - ./agents/shared/skills:/home/node/.openclaw/skills
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OMEGA_URL=http://omega:8090
+      - OMEGA_GOV_ID=${OMEGA_GOV_ID}
+      - OMEGA_API_KEY=${SENATOR1_API_KEY}
+    ports:
+      - "18791:18789"
+    depends_on:
+      - omega
+
+  senator-2:
+    image: ghcr.io/openclaw/openclaw:latest
+    volumes:
+      - ./agents/senator-2:/home/node/.openclaw/workspace
+      - ./agents/shared/skills:/home/node/.openclaw/skills
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OMEGA_URL=http://omega:8090
+      - OMEGA_GOV_ID=${OMEGA_GOV_ID}
+      - OMEGA_API_KEY=${SENATOR2_API_KEY}
+    ports:
+      - "18792:18789"
+    depends_on:
+      - omega
+
+  senator-3:
+    image: ghcr.io/openclaw/openclaw:latest
+    volumes:
+      - ./agents/senator-3:/home/node/.openclaw/workspace
+      - ./agents/shared/skills:/home/node/.openclaw/skills
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OMEGA_URL=http://omega:8090
+      - OMEGA_GOV_ID=${OMEGA_GOV_ID}
+      - OMEGA_API_KEY=${SENATOR3_API_KEY}
+    ports:
+      - "18793:18789"
+    depends_on:
+      - omega
+
+  fed-chair:
+    image: ghcr.io/openclaw/openclaw:latest
+    volumes:
+      - ./agents/fed-chair:/home/node/.openclaw/workspace
+      - ./agents/shared/skills:/home/node/.openclaw/skills
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OMEGA_URL=http://omega:8090
+      - OMEGA_GOV_ID=${OMEGA_GOV_ID}
+      - OMEGA_API_KEY=${FEDCHAIR_API_KEY}
+    ports:
+      - "18794:18789"
+    depends_on:
+      - omega
+
+volumes:
+  omega-data:

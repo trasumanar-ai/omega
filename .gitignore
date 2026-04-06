@@ -1,10 +1,3 @@
-# Node / Vite
-node_modules/
-dist/
-dist-ssr/
-*.local
-*.log
-
 # IDE
 .vscode/
 .idea/
@@ -13,8 +6,7 @@ dist-ssr/
 # Environment
 .env
 
-# Runtime output
-output/
-src/backend/runs/
-src/backend/lab-results/
-src/backend/experiment-results/
+# SQLite
+*.db
+*.db-shm
+*.db-wal

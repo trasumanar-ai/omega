@@ -1,39 +1,29 @@
 # Omega
 
-Repo is under active rewrite. Architecture, API shape, and product direction are intentionally unstable.
+AI Government platform. Multiple governments with different constitutions compete to govern populations of AI agents.
 
-## Current Focus
-
-Simulation and CLI work. UI is parked under `src/frontend` and is not the primary surface right now.
-
-## Backend Run
+## Run
 
 ```bash
 cd src/backend
 go run ./cmd/serve -port 8090
 ```
 
-## Optional LLM
+## API
+
+See `src/backend/internal/api/server.go` for all endpoints.
 
 ```bash
-export OPENROUTER_API_KEY=...
-export ECON_LLM_MODEL=deepseek/deepseek-chat-v3-0324
+# Create a government
+curl -X POST http://localhost:8090/api/governments \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Free Market","config":{"initial_balance":1000,"transfer_tax":0.02,"open_membership":true}}'
+
+# Register an agent
+curl -X POST http://localhost:8090/api/governments/{id}/registry/register \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Agent Alpha","soul_md":"I am helpful","model":"gpt-4o"}'
 ```
-
-## Frontend
-
-```bash
-cd src/frontend
-npm install
-npm run dev
-```
-
-- UI: `http://localhost:20000`
-- API proxy target: `http://localhost:8090`
-
-## Current Rule
-
-Optimize for iteration speed. Treat in-repo docs as provisional unless they are needed to run the code.
 
 ## License
 
