@@ -107,4 +107,36 @@ CREATE TABLE IF NOT EXISTS contract_parties (
 	signed_at   DATETIME,
 	PRIMARY KEY (contract_id, agent_id)
 );
+
+CREATE TABLE IF NOT EXISTS events (
+	id              INTEGER PRIMARY KEY AUTOINCREMENT,
+	government_id   TEXT NOT NULL REFERENCES governments(id),
+	timestamp       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	actor           TEXT NOT NULL,
+	action          TEXT NOT NULL,
+	target          TEXT NOT NULL DEFAULT '',
+	details         TEXT NOT NULL DEFAULT '{}',
+	result          TEXT NOT NULL DEFAULT 'ok',
+	created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_events_gov ON events(government_id);
+CREATE INDEX IF NOT EXISTS idx_events_actor ON events(government_id, actor);
+CREATE INDEX IF NOT EXISTS idx_events_action ON events(government_id, action);
+
+CREATE TABLE IF NOT EXISTS snapshots (
+	id                INTEGER PRIMARY KEY AUTOINCREMENT,
+	government_id     TEXT NOT NULL REFERENCES governments(id),
+	timestamp         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	citizen_count     INTEGER NOT NULL DEFAULT 0,
+	money_supply      REAL NOT NULL DEFAULT 0,
+	treasury_balance  REAL NOT NULL DEFAULT 0,
+	gini              REAL NOT NULL DEFAULT 0,
+	tx_count          INTEGER NOT NULL DEFAULT 0,
+	tx_volume         REAL NOT NULL DEFAULT 0,
+	contracts_created INTEGER NOT NULL DEFAULT 0,
+	contracts_active  INTEGER NOT NULL DEFAULT 0,
+	firm_count        INTEGER NOT NULL DEFAULT 0,
+	balances          TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_snapshots_gov ON snapshots(government_id);
 `

@@ -6,8 +6,10 @@ import (
 	"omega/backend/internal/bank"
 	"omega/backend/internal/contracts"
 	"omega/backend/internal/government"
+	"omega/backend/internal/observer"
 	"omega/backend/internal/registry"
 	"omega/backend/internal/store"
+	"strconv"
 	"strings"
 )
 
@@ -16,15 +18,17 @@ type Server struct {
 	registry  *registry.Registry
 	bank      *bank.Bank
 	contracts *contracts.Contracts
+	observer  *observer.Observer
 	mux       *http.ServeMux
 }
 
-func NewServer(db *store.DB, reg *registry.Registry, bnk *bank.Bank, cts *contracts.Contracts) *Server {
+func NewServer(db *store.DB, reg *registry.Registry, bnk *bank.Bank, cts *contracts.Contracts, obs *observer.Observer) *Server {
 	s := &Server{
 		db:        db,
 		registry:  reg,
 		bank:      bnk,
 		contracts: cts,
+		observer:  obs,
 		mux:       http.NewServeMux(),
 	}
 	s.routes()
@@ -70,6 +74,11 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/governments/{id}/contracts", s.withAuth(s.handleListContracts))
 	s.mux.HandleFunc("GET /api/governments/{id}/contracts/{cid}", s.handleGetContract)
 	s.mux.HandleFunc("POST /api/governments/{id}/contracts/{cid}/sign", s.withAuth(s.handleSignContract))
+
+	// Observer
+	s.mux.HandleFunc("GET /api/governments/{id}/report", s.handleReport)
+	s.mux.HandleFunc("GET /api/governments/{id}/events", s.handleEvents)
+	s.mux.HandleFunc("POST /api/governments/{id}/snapshot", s.handleTakeSnapshot)
 }
 
 // Auth middleware: extracts agent from Bearer token
@@ -201,6 +210,11 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.observer.LogEvent(govID, agent.ID, "register", "", map[string]any{
+		"name": agent.Name, "model": req.Model, "initial_balance": gov.Config.InitialBalance,
+		"referred_by": req.ReferredBy,
+	}, "ok")
+
 	writeJSON(w, 201, agent)
 }
 
@@ -237,6 +251,8 @@ func (s *Server) handleCreateFirm(w http.ResponseWriter, r *http.Request, agent 
 		writeErr(w, 500, err.Error())
 		return
 	}
+	s.observer.LogEvent(agent.GovID, agent.ID, "create_firm", firm.ID,
+		map[string]any{"name": req.Name}, "ok")
 	writeJSON(w, 201, firm)
 }
 
@@ -285,9 +301,13 @@ func (s *Server) handleTransfer(w http.ResponseWriter, r *http.Request, agent *r
 
 	err = s.bank.Transfer(agent.GovID, agent.ID, req.ToID, req.Amount, gov.Config.TransferTax)
 	if err != nil {
+		s.observer.LogEvent(agent.GovID, agent.ID, "transfer", req.ToID,
+			map[string]any{"amount": req.Amount}, err.Error())
 		writeErr(w, 400, err.Error())
 		return
 	}
+	s.observer.LogEvent(agent.GovID, agent.ID, "transfer", req.ToID,
+		map[string]any{"amount": req.Amount, "tax": req.Amount * gov.Config.TransferTax}, "ok")
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
@@ -337,6 +357,8 @@ func (s *Server) handleCreateContract(w http.ResponseWriter, r *http.Request, ag
 		writeErr(w, 500, err.Error())
 		return
 	}
+	s.observer.LogEvent(agent.GovID, agent.ID, "create_contract", ct.ID,
+		map[string]any{"type": req.Type, "terms": req.Terms, "parties": req.Parties}, "ok")
 	writeJSON(w, 201, ct)
 }
 
@@ -362,9 +384,53 @@ func (s *Server) handleGetContract(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleSignContract(w http.ResponseWriter, r *http.Request, agent *registry.Agent) {
-	err := s.contracts.Sign(agent.GovID, r.PathValue("cid"), agent.ID)
+	cid := r.PathValue("cid")
+	err := s.contracts.Sign(agent.GovID, cid, agent.ID)
 	if err != nil {
+		s.observer.LogEvent(agent.GovID, agent.ID, "sign_contract", cid, nil, err.Error())
 		writeErr(w, 400, err.Error())
+		return
+	}
+	s.observer.LogEvent(agent.GovID, agent.ID, "sign_contract", cid, nil, "ok")
+	writeJSON(w, 200, map[string]any{"ok": true})
+}
+
+// --- Observer ---
+
+func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
+	govID := r.PathValue("id")
+	limit, _ := strconv.Atoi(r.URL.Query().Get("events"))
+	if limit <= 0 {
+		limit = 500
+	}
+	report, err := s.observer.GetReport(govID, limit)
+	if err != nil {
+		writeErr(w, 404, err.Error())
+		return
+	}
+	writeJSON(w, 200, report)
+}
+
+func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
+	govID := r.PathValue("id")
+	actor := r.URL.Query().Get("actor")
+	action := r.URL.Query().Get("action")
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	events, err := s.observer.GetEvents(govID, actor, action, limit)
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	if events == nil {
+		events = []observer.Event{}
+	}
+	writeJSON(w, 200, events)
+}
+
+func (s *Server) handleTakeSnapshot(w http.ResponseWriter, r *http.Request) {
+	govID := r.PathValue("id")
+	if err := s.observer.TakeSnapshot(govID); err != nil {
+		writeErr(w, 500, err.Error())
 		return
 	}
 	writeJSON(w, 200, map[string]any{"ok": true})

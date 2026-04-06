@@ -13,6 +13,7 @@ import (
 	"omega/backend/internal/api"
 	"omega/backend/internal/bank"
 	"omega/backend/internal/contracts"
+	"omega/backend/internal/observer"
 	"omega/backend/internal/registry"
 	"omega/backend/internal/store"
 )
@@ -31,10 +32,11 @@ func main() {
 	reg := registry.New(db)
 	bnk := bank.New(db)
 	cts := contracts.New(db, bnk)
+	obs := observer.New(db)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", *port),
-		Handler: api.NewServer(db, reg, bnk, cts),
+		Handler: api.NewServer(db, reg, bnk, cts, obs),
 	}
 
 	go func() {

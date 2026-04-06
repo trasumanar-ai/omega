@@ -6,12 +6,16 @@ services:
       - "8090:8090"
     volumes:
       - omega-data:/data
+    networks:
+      - gov
 
   president:
     image: ghcr.io/openclaw/openclaw:latest
     volumes:
-      - ./agents/president:/home/node/.openclaw/workspace
-      - ./agents/shared/skills:/home/node/.openclaw/skills
+      - ./agents/president:/home/node/.openclaw/workspace:ro
+      - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
+      - president-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
@@ -19,14 +23,26 @@ services:
       - OMEGA_API_KEY=${PRESIDENT_API_KEY}
     ports:
       - "18790:18789"
+    networks:
+      - gov
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/node/.cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       - omega
 
   senator-1:
     image: ghcr.io/openclaw/openclaw:latest
     volumes:
-      - ./agents/senator-1:/home/node/.openclaw/workspace
-      - ./agents/shared/skills:/home/node/.openclaw/skills
+      - ./agents/senator-1:/home/node/.openclaw/workspace:ro
+      - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
+      - senator1-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
@@ -34,14 +50,26 @@ services:
       - OMEGA_API_KEY=${SENATOR1_API_KEY}
     ports:
       - "18791:18789"
+    networks:
+      - gov
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/node/.cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       - omega
 
   senator-2:
     image: ghcr.io/openclaw/openclaw:latest
     volumes:
-      - ./agents/senator-2:/home/node/.openclaw/workspace
-      - ./agents/shared/skills:/home/node/.openclaw/skills
+      - ./agents/senator-2:/home/node/.openclaw/workspace:ro
+      - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
+      - senator2-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
@@ -49,14 +77,26 @@ services:
       - OMEGA_API_KEY=${SENATOR2_API_KEY}
     ports:
       - "18792:18789"
+    networks:
+      - gov
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/node/.cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       - omega
 
   senator-3:
     image: ghcr.io/openclaw/openclaw:latest
     volumes:
-      - ./agents/senator-3:/home/node/.openclaw/workspace
-      - ./agents/shared/skills:/home/node/.openclaw/skills
+      - ./agents/senator-3:/home/node/.openclaw/workspace:ro
+      - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
+      - senator3-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
@@ -64,14 +104,26 @@ services:
       - OMEGA_API_KEY=${SENATOR3_API_KEY}
     ports:
       - "18793:18789"
+    networks:
+      - gov
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/node/.cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       - omega
 
   fed-chair:
     image: ghcr.io/openclaw/openclaw:latest
     volumes:
-      - ./agents/fed-chair:/home/node/.openclaw/workspace
-      - ./agents/shared/skills:/home/node/.openclaw/skills
+      - ./agents/fed-chair:/home/node/.openclaw/workspace:ro
+      - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
+      - fedchair-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
@@ -79,8 +131,27 @@ services:
       - OMEGA_API_KEY=${FEDCHAIR_API_KEY}
     ports:
       - "18794:18789"
+    networks:
+      - gov
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/node/.cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       - omega
 
+networks:
+  gov:
+    driver: bridge
+
 volumes:
   omega-data:
+  president-work:
+  senator1-work:
+  senator2-work:
+  senator3-work:
+  fedchair-work:
