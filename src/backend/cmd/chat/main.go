@@ -45,22 +45,24 @@ type toolSchema struct {
 
 func main() {
 	agentDir := flag.String("agent", "agents/president", "path to agent workspace")
-	apiKey := flag.String("api-key", os.Getenv("OPENROUTER_API_KEY"), "OpenRouter API key")
-	model := flag.String("model", "anthropic/claude-sonnet-4-5", "LLM model")
+	apiKey := flag.String("api-key", "", "OpenRouter API key")
+	model := flag.String("model", "minimax/minimax-m2.7", "LLM model")
 	govURL := flag.String("gov-url", "http://localhost:8090", "government API URL")
 	agentKey := flag.String("agent-key", "", "agent API key (from .env)")
 	govID := flag.String("gov-id", "", "government ID (from .env)")
 	flag.Parse()
 
-	// Try loading from .env if flags not set
-	if *agentKey == "" || *govID == "" {
-		loadDotEnv(*agentDir)
-		if *agentKey == "" {
-			*agentKey = os.Getenv("OMEGA_API_KEY")
-		}
-		if *govID == "" {
-			*govID = os.Getenv("OMEGA_GOV_ID")
-		}
+	// Load .env first, then resolve all values
+	loadDotEnv(*agentDir)
+
+	if *apiKey == "" {
+		*apiKey = os.Getenv("OPENROUTER_API_KEY")
+	}
+	if *agentKey == "" {
+		*agentKey = os.Getenv("OMEGA_API_KEY")
+	}
+	if *govID == "" {
+		*govID = os.Getenv("OMEGA_GOV_ID")
 	}
 
 	if *apiKey == "" {
