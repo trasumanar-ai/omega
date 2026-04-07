@@ -10,17 +10,21 @@ services:
       - gov
 
   president:
-    image: ghcr.io/openclaw/openclaw:latest
+    build:
+      context: .
+      dockerfile: agents/Dockerfile
     volumes:
       - ./agents/president:/home/node/.openclaw/workspace:ro
       - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/openclaw.json:/home/node/.openclaw/openclaw.json:ro
       - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
       - president-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
       - OMEGA_GOV_ID=${OMEGA_GOV_ID}
-      - OMEGA_API_KEY=${PRESIDENT_API_KEY}
+      - OMEGA_AGENT_NAME=President
+      - OMEGA_MODEL=stepfun/step-3.5-flash
     ports:
       - "18790:18789"
     networks:
@@ -31,23 +35,25 @@ services:
       - /home/node/.cache
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     depends_on:
       - omega
 
   senator-1:
-    image: ghcr.io/openclaw/openclaw:latest
+    build:
+      context: .
+      dockerfile: agents/Dockerfile
     volumes:
       - ./agents/senator-1:/home/node/.openclaw/workspace:ro
       - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/openclaw.json:/home/node/.openclaw/openclaw.json:ro
       - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
       - senator1-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
       - OMEGA_GOV_ID=${OMEGA_GOV_ID}
-      - OMEGA_API_KEY=${SENATOR1_API_KEY}
+      - OMEGA_AGENT_NAME=Senator One (Speaker)
+      - OMEGA_MODEL=stepfun/step-3.5-flash
     ports:
       - "18791:18789"
     networks:
@@ -58,23 +64,25 @@ services:
       - /home/node/.cache
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     depends_on:
       - omega
 
   senator-2:
-    image: ghcr.io/openclaw/openclaw:latest
+    build:
+      context: .
+      dockerfile: agents/Dockerfile
     volumes:
       - ./agents/senator-2:/home/node/.openclaw/workspace:ro
       - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/openclaw.json:/home/node/.openclaw/openclaw.json:ro
       - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
       - senator2-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
       - OMEGA_GOV_ID=${OMEGA_GOV_ID}
-      - OMEGA_API_KEY=${SENATOR2_API_KEY}
+      - OMEGA_AGENT_NAME=Senator Two (Finance)
+      - OMEGA_MODEL=stepfun/step-3.5-flash
     ports:
       - "18792:18789"
     networks:
@@ -85,23 +93,25 @@ services:
       - /home/node/.cache
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     depends_on:
       - omega
 
   senator-3:
-    image: ghcr.io/openclaw/openclaw:latest
+    build:
+      context: .
+      dockerfile: agents/Dockerfile
     volumes:
       - ./agents/senator-3:/home/node/.openclaw/workspace:ro
       - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/openclaw.json:/home/node/.openclaw/openclaw.json:ro
       - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
       - senator3-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
       - OMEGA_GOV_ID=${OMEGA_GOV_ID}
-      - OMEGA_API_KEY=${SENATOR3_API_KEY}
+      - OMEGA_AGENT_NAME=Senator Three (Foreign Affairs)
+      - OMEGA_MODEL=stepfun/step-3.5-flash
     ports:
       - "18793:18789"
     networks:
@@ -112,23 +122,25 @@ services:
       - /home/node/.cache
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     depends_on:
       - omega
 
   fed-chair:
-    image: ghcr.io/openclaw/openclaw:latest
+    build:
+      context: .
+      dockerfile: agents/Dockerfile
     volumes:
       - ./agents/fed-chair:/home/node/.openclaw/workspace:ro
       - ./agents/shared/skills:/home/node/.openclaw/skills:ro
+      - ./agents/shared/openclaw.json:/home/node/.openclaw/openclaw.json:ro
       - ./agents/shared/TOOLS.md:/home/node/.openclaw/workspace/TOOLS.md:ro
       - fedchair-work:/home/node/work
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OMEGA_URL=http://omega:8090
       - OMEGA_GOV_ID=${OMEGA_GOV_ID}
-      - OMEGA_API_KEY=${FEDCHAIR_API_KEY}
+      - OMEGA_AGENT_NAME=Fed Chair
+      - OMEGA_MODEL=stepfun/step-3.5-flash
     ports:
       - "18794:18789"
     networks:
@@ -139,8 +151,6 @@ services:
       - /home/node/.cache
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     depends_on:
       - omega
 

@@ -50,7 +50,7 @@ type toolSchema struct {
 func main() {
 	agentDir := flag.String("agent", "agents/president", "path to agent workspace")
 	apiKey := flag.String("api-key", "", "OpenRouter API key")
-	model := flag.String("model", "minimax/minimax-m2.7", "LLM model")
+	model := flag.String("model", "stepfun/step-3.5-flash", "LLM model")
 	govURL := flag.String("gov-url", "http://localhost:8090", "government API URL")
 	govID := flag.String("gov-id", "", "government ID")
 	flag.Parse()

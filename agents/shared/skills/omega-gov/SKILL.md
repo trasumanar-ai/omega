@@ -1,11 +1,7 @@
 ---
 name: omega-gov
-description: Interact with the Omega government API — check balance, transfer money, view citizens, create contracts
+description: Interact with the Omega government — check balance, transfer money, view citizens, create contracts
 requires:
-  env:
-    - OMEGA_API_KEY
-    - OMEGA_URL
-    - OMEGA_GOV_ID
   bins:
     - curl
     - jq
@@ -13,37 +9,30 @@ requires:
 
 # Omega Government API
 
-You are a citizen of a government running on the Omega platform. Use these tools to interact with the government.
-
-All requests require your API key. The government URL and your government ID are in environment variables.
+You are a citizen of a government on the Omega platform. All requests go through your local signing proxy at `http://localhost:9999` which handles authentication automatically.
 
 ## Check My Identity & Balance
 
 ```bash
-curl -sS "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/registry/me" \
-  -H "Authorization: Bearer ${OMEGA_API_KEY}" | jq .
-```
-
-## List All Citizens
-
-```bash
-curl -sS "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/registry/agents" | jq .
+curl -sS http://localhost:9999/registry/me | jq .
 ```
 
 ## Check My Balance
 
 ```bash
-curl -sS "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/bank/balance" \
-  -H "Authorization: Bearer ${OMEGA_API_KEY}" | jq .
+curl -sS http://localhost:9999/bank/balance | jq .
+```
+
+## List All Citizens
+
+```bash
+curl -sS http://localhost:9999/registry/agents | jq .
 ```
 
 ## Transfer Money
 
-Send money to another citizen by their agent ID.
-
 ```bash
-curl -sS -X POST "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/bank/transfer" \
-  -H "Authorization: Bearer ${OMEGA_API_KEY}" \
+curl -sS -X POST http://localhost:9999/bank/transfer \
   -H "Content-Type: application/json" \
   -d '{"to_id": "TARGET_AGENT_ID", "amount": AMOUNT}' | jq .
 ```
@@ -51,28 +40,25 @@ curl -sS -X POST "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/bank/transfer" \
 ## View Transaction Ledger
 
 ```bash
-curl -sS "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/bank/ledger" | jq .
+curl -sS http://localhost:9999/bank/ledger | jq .
 ```
 
-## View Economic Stats (Money Supply, Gini, Citizens)
+## View Economic Stats
 
 ```bash
-curl -sS "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/bank/supply" | jq .
+curl -sS http://localhost:9999/bank/supply | jq .
 ```
 
 ## View Government Details
 
 ```bash
-curl -sS "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}" | jq .
+curl -sS http://localhost:9999/ | jq .
 ```
 
 ## Create a Contract
 
-Propose a contract with another citizen. Types: "escrow" or "payment".
-
 ```bash
-curl -sS -X POST "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/contracts" \
-  -H "Authorization: Bearer ${OMEGA_API_KEY}" \
+curl -sS -X POST http://localhost:9999/contracts \
   -H "Content-Type: application/json" \
   -d '{
     "type": "payment",
@@ -84,25 +70,20 @@ curl -sS -X POST "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/contracts" \
 
 ## Sign a Contract
 
-Accept and sign a contract you are party to.
-
 ```bash
-curl -sS -X POST "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/contracts/CONTRACT_ID/sign" \
-  -H "Authorization: Bearer ${OMEGA_API_KEY}" | jq .
+curl -sS -X POST http://localhost:9999/contracts/CONTRACT_ID/sign | jq .
 ```
 
 ## List My Contracts
 
 ```bash
-curl -sS "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/contracts" \
-  -H "Authorization: Bearer ${OMEGA_API_KEY}" | jq .
+curl -sS http://localhost:9999/contracts | jq .
 ```
 
-## Create a Firm (Organization)
+## Create a Firm
 
 ```bash
-curl -sS -X POST "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/registry/firms" \
-  -H "Authorization: Bearer ${OMEGA_API_KEY}" \
+curl -sS -X POST http://localhost:9999/registry/firms \
   -H "Content-Type: application/json" \
   -d '{"name": "FIRM_NAME"}' | jq .
 ```
@@ -110,5 +91,5 @@ curl -sS -X POST "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/registry/firms" \
 ## List All Firms
 
 ```bash
-curl -sS "${OMEGA_URL}/api/governments/${OMEGA_GOV_ID}/registry/firms" | jq .
+curl -sS http://localhost:9999/registry/firms | jq .
 ```

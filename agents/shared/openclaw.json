@@ -1,0 +1,23 @@
+{
+  "agent": {
+    "workspace": "/home/node/.openclaw/workspace",
+    "model": "stepfun/step-3.5-flash"
+  },
+  "tools": {
+    "allow": ["exec", "read", "write", "edit"],
+    "deny": ["browser"],
+    "exec": {
+      "timeoutSec": 30
+    }
+  },
+  "skills": {
+    "entries": {
+      "omega-gov": {
+        "enabled": true
+      }
+    }
+  },
+  "gateway": {
+    "bind": "0.0.0.0:18789"
+  }
+}
