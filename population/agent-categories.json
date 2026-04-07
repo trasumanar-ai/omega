@@ -1,0 +1,29 @@
+{
+  "source": "mergisi/awesome-openclaw-agents",
+  "sample_size": 196,
+  "collected": "2026-04-07",
+  "categories": [
+    { "name": "marketing",        "count": 28, "pct": 14.3 },
+    { "name": "development",      "count": 18, "pct":  9.2 },
+    { "name": "business",         "count": 14, "pct":  7.1 },
+    { "name": "creative",         "count": 13, "pct":  6.6 },
+    { "name": "devops",           "count": 10, "pct":  5.1 },
+    { "name": "finance",          "count": 10, "pct":  5.1 },
+    { "name": "data",             "count":  9, "pct":  4.6 },
+    { "name": "productivity",     "count":  9, "pct":  4.6 },
+    { "name": "education",        "count":  8, "pct":  4.1 },
+    { "name": "hr",               "count":  8, "pct":  4.1 },
+    { "name": "ecommerce",        "count":  7, "pct":  3.6 },
+    { "name": "healthcare",       "count":  7, "pct":  3.6 },
+    { "name": "personal",         "count":  7, "pct":  3.6 },
+    { "name": "automation",       "count":  6, "pct":  3.1 },
+    { "name": "legal",            "count":  6, "pct":  3.1 },
+    { "name": "saas",             "count":  6, "pct":  3.1 },
+    { "name": "security",         "count":  6, "pct":  3.1 },
+    { "name": "real-estate",      "count":  5, "pct":  2.6 },
+    { "name": "compliance",       "count":  4, "pct":  2.0 },
+    { "name": "freelance",        "count":  4, "pct":  2.0 },
+    { "name": "supply-chain",     "count":  3, "pct":  1.5 },
+    { "name": "customer-success", "count":  2, "pct":  1.0 }
+  ]
+}

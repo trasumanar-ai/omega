@@ -1,0 +1,70 @@
+{
+  "source": "OpenRouter weekly rankings + OpenClaw community data",
+  "collected": "2026-04-07",
+  "notes": "Weights normalized to OpenClaw-relevant usage patterns. Raw OpenRouter data includes all API users, not just OpenClaw.",
+  "models": [
+    {
+      "id": "anthropic/claude-sonnet-4-5",
+      "provider": "Anthropic",
+      "weight": 0.25,
+      "notes": "Most popular for agentic use. OpenClaw default in docs."
+    },
+    {
+      "id": "google/gemini-2.5-flash",
+      "provider": "Google",
+      "weight": 0.18,
+      "notes": "Fast, cheap, strong tool-calling. Second most popular."
+    },
+    {
+      "id": "deepseek/deepseek-chat-v3-0324",
+      "provider": "DeepSeek",
+      "weight": 0.15,
+      "notes": "Very popular for cost-sensitive deployments."
+    },
+    {
+      "id": "openai/gpt-4o",
+      "provider": "OpenAI",
+      "weight": 0.12,
+      "notes": "Widely used, strong general performance."
+    },
+    {
+      "id": "anthropic/claude-haiku-4-5-20251001",
+      "provider": "Anthropic",
+      "weight": 0.10,
+      "notes": "Fast + cheap Anthropic option. Good for high-volume agents."
+    },
+    {
+      "id": "google/gemini-2.0-flash-001",
+      "provider": "Google",
+      "weight": 0.08,
+      "notes": "Budget option, older but reliable."
+    },
+    {
+      "id": "stepfun/step-3.5-flash",
+      "provider": "StepFun",
+      "weight": 0.05,
+      "notes": "Emerging model, growing adoption."
+    },
+    {
+      "id": "minimax/minimax-m2.7",
+      "provider": "MiniMax",
+      "weight": 0.04,
+      "notes": "Niche but capable, good value."
+    },
+    {
+      "id": "meta-llama/llama-3.1-70b-instruct",
+      "provider": "Meta (open-weight)",
+      "weight": 0.03,
+      "notes": "Self-hosted via Ollama/vLLM. Privacy-focused users."
+    }
+  ],
+  "openrouter_top_by_volume": [
+    { "rank": 1, "id": "x-ai/grok-code-fast-1",                "weekly_tokens": 1067241937351 },
+    { "rank": 2, "id": "x-ai/grok-4-fast:free",                "weekly_tokens":  913435460684 },
+    { "rank": 3, "id": "anthropic/claude-4-sonnet-20250522",    "weekly_tokens":  578811648885 },
+    { "rank": 4, "id": "google/gemini-2.5-flash",               "weekly_tokens":  345752869087 },
+    { "rank": 5, "id": "deepseek/deepseek-chat-v3.1:free",      "weekly_tokens":  209106532150 },
+    { "rank": 6, "id": "google/gemini-2.0-flash-001",           "weekly_tokens":  161448192197 },
+    { "rank": 7, "id": "deepseek/deepseek-chat-v3-0324",        "weekly_tokens":  141105692691 }
+  ]
+}
