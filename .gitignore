@@ -10,12 +10,12 @@
 **/keys/omega.key
 **/keys/omega.pub
 
-# Binaries
-**/serve
-**/chat
-**/identity
-**/populate
-**/proxy
+# Binaries (compiled, not source dirs)
+src/backend/serve
+src/backend/chat
+src/backend/identity
+src/backend/populate
+src/backend/proxy
 
 # SQLite
 *.db
