@@ -7,14 +7,15 @@
 .env
 
 # Agent keys (private!)
-agents/*/keys/
-omega.key
-omega.pub
+**/keys/omega.key
+**/keys/omega.pub
 
 # Binaries
-/src/backend/chat
-/src/backend/identity
-/src/backend/serve
+**/serve
+**/chat
+**/identity
+**/populate
+**/proxy
 
 # SQLite
 *.db
